@@ -1,0 +1,21 @@
+#! /bin/sh
+
+if [ "$1" = "start" ]
+then
+	X 2>/tmp/X-debug &
+	sleep 1
+	/usr/bin/eris-dashboard -display :0 &
+	/usr/bin/no-screen-saver &
+fi
+
+if [ "$1" = "stop" ]
+then
+
+	killall xset 2>/dev/null
+	killall no-screen-saver 2>/dev/null
+	killall eris-dashboard 2>/dev/null
+	killall X 2>/dev/null
+	rm -f /tmp/X-debug
+fi
+
+exit 0
