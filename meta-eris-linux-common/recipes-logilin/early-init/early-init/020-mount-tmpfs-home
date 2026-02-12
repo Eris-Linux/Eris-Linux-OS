@@ -1,0 +1,33 @@
+#! /bin/sh
+#
+# SPDX-License-Identifier: MIT
+#
+
+create_home_directories() {
+
+	for name in root
+	do
+		if [ ! -d /home/${name} ]
+		then
+			mkdir /home/${name}
+			for file in /etc/skel/.*
+			do
+				if [ "$file" = "/etc/skel/." ] || [ "$file" = "/etc/skel/.." ]; then continue; fi
+				cp -R ${file} /home/${name}/
+			done
+			chown -R ${name}:${name} /home/${name}
+		fi
+	done
+}
+
+
+mount_home_partition() {
+
+	mount none /home -t tmpfs
+}
+
+
+if mount_home_partition
+then
+	create_home_directories
+fi

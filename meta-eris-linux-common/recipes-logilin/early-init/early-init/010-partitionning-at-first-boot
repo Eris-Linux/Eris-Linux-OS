@@ -1,0 +1,83 @@
+#!/bin/sh
+
+source /usr/share/eris-linux/partitions
+
+# At first boot we prepare the partitionning scheme.
+#
+if [ ! -b "${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_EXTENDED}" ]
+then
+	extended_start=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_SYSTEM_A}'") { printf $3 + 1}' )
+	# the rootfs size is slightly increased to avoid _no space left_ message
+	rootfs_size=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_SYSTEM_R}'") { printf $4 + 1024}' )
+	data_size="2G"
+
+	echo "Preparing system partitions..."
+
+	# Remove: Data, SystemB, Extended.
+	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF1
+		d
+		${ERIS_PARTITION_DATA}
+		w
+	EOF1
+
+	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF2
+		d
+		${ERIS_PARTITION_SYSTEM_B}
+		w
+	EOF2
+
+	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF4
+		d
+		${ERIS_PARTITION_EXTENDED}
+		w
+	EOF4
+
+	# Create Extended
+	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF5
+		n
+		e
+		${extended_start}
+
+		w
+	EOF5
+
+	# Create System B
+	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF6
+		n
+		l
+
+		+${rootfs_size}
+		w
+	EOF6
+
+	# Create Data and tag with arbitrary type "25"
+	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF7
+		n
+		l
+
+		+${data_size}
+		t
+		${ERIS_PARTITION_DATA}
+		25
+		w
+	EOF7
+	mount ${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT} /boot
+	/usr/sbin/force-boot-on A
+	sync
+	/usr/sbin/fast-reboot
+	while true; do : ; done
+fi
+
+data_part="${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}"
+part_type=$(fdisk -l /dev/mmcblk0 | awk '($1 == "'${data_part}'") { print $6 }')
+
+if [ "${part_type}" = "25" ]
+then
+	mkfs.ext4 -F ${data_part}
+	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF8
+		t
+		${ERIS_PARTITION_DATA}
+		83
+		w
+	EOF8
+fi

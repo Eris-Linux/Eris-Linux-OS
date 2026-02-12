@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# SPDX-License-Identifier: MIT
+#
+# Script to mount a read-write data partition, to check the filesystem in
+# case of mount failure, and to reformate the partition if the check failed.
+#
+
+source /usr/share/eris-linux/partitions
+
+PARTITION="${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}"
+MOUNTPOINT=/data
+FILESYSTEM=ext4
+NAME=data
+
+printf "Preparing ${NAME} partition..." >&2
+
+if mount ${PARTITION} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
+then
+	mkdir -p "${MOUNTPOINT}/containers"
+	exit 0
+fi
+
+if fsck.${FILESYSTEM}  -p  ${PARTITION} >/dev/null 2>&1
+then
+	if mount ${PARTITION} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
+	then
+		mkdir -p "${MOUNTPOINT}/containers"
+		exit 0
+	fi
+fi
+
+if [ "${FILESYSTEM}" = "vfat" ]
+then
+	mkfs.vfat -c -n DATA ${PARTITION} >/dev/null 2>&1
+else
+	mkfs.${FILESYSTEM} -c -L DATA -q ${PARTITION} >/dev/null 2>&1
+fi
+
+
+if mount ${PARTITION} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
+then
+	mkdir -p "${MOUNTPOINT}/containers"
+	exit 0
+fi
+
+exit 1
