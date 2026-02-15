@@ -1,0 +1,207 @@
+#!/bin/sh
+
+
+CONTAINERS_FILE="/etc/eris-linux/containers"
+SLOTS_DIR="/usr/share/eris-linux/containers"
+CONTAINERS_STORAGE="/data/container-storage"
+
+MIN_SLOT_NUMBER=1
+MAX_SLOT_NUMBER=4
+
+X11_OPT="-e DISPLAY=:0 -v /tmp/.X11-unix:/tmp/.X11-unix"
+QT6_OPT="-v /usr/lib/:/qt-usr-lib:ro -e QT_QPA_PLATFORM_PLUGIN_PATH=/qt-usr-lib/plugins/platforms"
+GCC_OPT="-v /lib:/gcclib:ro"
+LIB_OPT="-e LD_LIBRARY_PATH=/qt-usr-lib:/gcclib"
+FONT_OPT="-v /etc/fonts:/etc/fonts:ro -v /usr/share/fonts:/usr/share/fonts:ro"
+
+
+start_container()
+{
+	local name="slot-${1}"
+	local slot_dir="${SLOTS_DIR}/slot-${1}"
+	local id=""
+	local label=""
+	local version=""
+	local options=""
+	local rest=""
+	local count=1
+	while IFS=! read id label version url graphical redirections privileged
+        do
+		if [ "${count}" = "${1}" ]; then break; fi
+		count=$((count + 1))
+	done < "${CONTAINERS_FILE}"
+
+	if [ "${id}" = "" ] || [ "${id}" = "-1" ]; then return; fi
+
+	if [ -f "${slot_dir}/slot.tar" ]
+	then
+		docker import - ${name} < "${slot_dir}/slot.tar"
+
+		local cmd=""
+		if [ -f "${slot_dir}/slot.cmd" ]
+		then
+			cmd=$(cat "${slot_dir}/slot.cmd")
+		fi
+		local docker_opts="--add-host=host.docker.internal:host-gateway"
+		docker_opts="${docker_opts} --mount type=bind,source=${CONTAINERS_STORAGE},target=/data"
+
+		if [ "${graphical:0:1}" = "Y" ] || [ "${graphical:0:1}" = "y" ]
+		then
+			# Graphical container.
+			docker_opts="${docker_opts} ${X11_OPT} ${QT6_OPT} ${GCC_OPT} ${LIB_OPT} ${FONT_OPT}"
+		fi
+
+		for redirection in ${redirections}
+		do
+			option="${redirection}"
+			# Expected: <external port>:<internal port>/<protocol>
+			ext_port="${option%%:*}"
+			option="${option#*:}"
+			if [ "${ext_port}" = "${option}" ] || [ "${option}" = "" ]
+			then
+				int_port="${ext_port}"
+				protocol="tcp"
+			else
+				int_port="${option%/*}"
+				protocol="${option#*/}"
+				if [ "${int_port}" = "${protocol}" ] || [ "${protocol}" = "" ]
+				then
+					protocol="tcp"
+				fi
+			fi
+			docker_opts="${docker_opts} -p ${ext_port}:${int_port}/${protocol}"
+		done
+
+		if [ "${privileged:0:1}" = "Y" ] || [ "${privileged:0:1}" = "y" ]
+		then
+			docker_opts="${docker_opts} --privileged"
+		fi
+
+		docker run -t --init --rm ${docker_opts} ${name} ${cmd} > /dev/console 2>/dev/null &
+	fi
+}
+
+
+
+start_all_containers()
+{
+	local slot=1
+
+	while IFS=! read id rest
+	do
+		if [ ${id} -ge 0 ]
+		then
+			start_container ${slot} ${id}
+		fi
+
+		slot=$(( ${slot} + 1 ))
+	done < "${CONTAINERS_FILE}"
+}
+
+
+
+stop_container()
+{
+	local name="slot-${1}"
+	local did
+
+	did=$(docker ps | grep "${name}" | cut -f 1 -d ' ')
+	if [ "${did}" !=  "" ]
+	then
+		docker stop -t 5 ${did}
+	fi
+}
+
+
+
+stop_all_containers()
+{
+	local i
+
+	for i in $(seq 1 ${MAX_SLOT_NUMBER})
+	do
+		stop_container "$i"
+	done
+}
+
+
+
+display_help()
+{
+		echo "Usage: $0 {start|stop|restart|start-slot <n>|stop-slot <n>|restart-slot <n>}"
+}
+
+
+
+touch "${CONTAINERS_FILE}"
+for s in $(seq 1 4)
+do
+	mkdir -p "${SLOTS_DIR}/slot-${s}"
+done
+mkdir -p "${CONTAINERS_STORAGE}"
+
+
+case "$1" in
+	start)
+		echo -n "Starting Eris containers... "
+		start_all_containers
+		echo "done."
+		;;
+
+	start-slot)
+		if [ $# -ge 2 ]
+		then
+			echo -n "Starting Eris container $2... "
+        	        start_container $2
+	                echo "done."
+		else
+			display_help
+			exit 1
+		fi
+                ;;
+
+	stop)
+		echo -n "Stopping Eris containers... "
+		stop_all_containers
+		echo "done."
+		;;
+
+	stop-slot)
+		if [ $# -ge 2 ]
+		then
+			echo -n "Stopping Eris container $2... "
+	                stop_container $2
+        	        echo "done."
+		else
+			display_help
+			exit 1
+		fi
+                ;;
+
+	force-reload|restart)
+		echo -n "Stopping and restarting Eris containers..."
+		stop_all_containers
+		start_all_containers
+		echo "done."
+		;;
+
+	restart-slot)
+		if [ $# -ge 2 ]
+		then
+			echo "Restarting Eris container $2... "
+	                stop_container $2
+        	        start_container $2
+			echo "Done."
+		else
+			display_help
+			exit 1
+		fi
+                ;;
+
+	*)
+		display_help
+		exit 1
+		;;
+esac
+
+exit 0
