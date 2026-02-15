@@ -1,0 +1,26 @@
+From f690d9031faa4d518e2ab7efc45763c354bf8f3c Mon Sep 17 00:00:00 2001
+From: Christophe Blaess <christophe.blaess@logilin.fr>
+Date: Fri, 8 Aug 2025 15:16:30 +0200
+Subject: [PATCH] splashscreen related environment variables
+Upstream-Status: Inappropriate [eris specific]
+---
+ board/raspberrypi/rpi/rpi.env | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/board/raspberrypi/rpi/rpi.env b/board/raspberrypi/rpi/rpi.env
+index 30228285ed..1125938902 100644
+--- a/board/raspberrypi/rpi/rpi.env
++++ b/board/raspberrypi/rpi/rpi.env
+@@ -75,3 +75,12 @@ fdt_addr_r=0x02600000
+ ramdisk_addr_r=0x02700000
+ 
+ boot_targets=mmc usb pxe dhcp
++
++splashfile=eris-splashscreen-02.bmp
++splashpos=m
++splashsource=mmc_fs
++silent=yes
++bootdelay=0
++stdin=serial
++stdout=serial
++

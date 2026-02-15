@@ -1,0 +1,59 @@
+# U-boot script for eris-linux update system
+#
+# (c) 2024 Logilin
+#
+#
+# We use the following environment variables
+# - current_boot
+# - next_boot_1
+# - next_boot_2
+# - next_boot_3
+# - recovery_part
+# - rollback: 0 normal boot, 1 update, 2 rollback
+
+
+cls
+load mmc 0:1 ${loadaddr} eris-splashscreen-01.bmp
+bmp display ${loadaddr}
+
+# Set a default configuration
+if test "${boot_next_1}" = ""
+then
+	# Default to recovery mmcblk0p2
+	setenv  recovery_part 2
+	setenv  current_boot  ${recovery_part}
+	setenv  boot_next_1   ${recovery_part}
+	setenv  boot_next_2   ${recovery_part}
+	setenv  boot_next_3   ${recovery_part}
+	setenv  rollback      0
+	saveenv
+else
+	if test "${current_boot}" != "${boot_next_1}"
+	then
+		if test "${rollback}" = "0"
+		then
+			# Previous boot as failed.
+			setenv roolback 2
+		fi
+		if test "${rollback}" = "1"
+		then
+			# First boot after update
+			setenv rollback 0
+		fi
+	fi
+	setenv current_boot    ${boot_next_1}
+	setenv boot_next_1     ${boot_next_2}
+	setenv boot_next_2     ${boot_next_3}
+	setenv boot_next_3     ${recovery_part}
+	saveenv
+fi
+
+load mmc 0:${current_boot} ${kernel_addr_r} boot/@@KERNEL_IMAGETYPE@@
+
+##load mmc 0:${current_boot} ${fdt_addr} /boot/bcm2710-rpi-3-b.dtb
+fdt addr ${fdt_addr}
+
+fdt get value bootargs /chosen bootargs
+setenv bootargs "${bootargs} root=/dev/mmcblk0p${current_boot}"
+
+@@KERNEL_BOOTCMD@@ ${kernel_addr_r} - ${fdt_addr}
