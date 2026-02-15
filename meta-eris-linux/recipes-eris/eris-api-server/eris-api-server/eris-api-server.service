@@ -1,0 +1,8 @@
+[Unit]
+Description=Eris Linux API server
+
+[Service]
+ExecStart=/usr/sbin/eris-api-server
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+#! /bin/sh
+
+case "$1" in
+	start)
+		md5sum  /etc/network/interfaces > /tmp/interfaces.md5
+		/usr/sbin/eris-api-server &
+		sleep 3
+		if ! md5sum -c /tmp/interfaces.md5  >/dev/null 2>&1
+		then
+			/etc/rc5.d/S01networking restart
+		fi ;;
+	stop)   killall eris-api-server ;;
+	restart) killall eris-api-server ; /usr/sbin/eris-api-server & ;;
+	*) echo "usage: $0 {start | stop | restart}" >&2; exit 1 ;;
+esac
+
+exit 0
