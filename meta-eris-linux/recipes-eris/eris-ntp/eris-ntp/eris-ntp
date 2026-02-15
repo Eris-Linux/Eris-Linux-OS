@@ -1,0 +1,48 @@
+#! /bin/sh
+
+# default to 2025/07/01 00:00:00
+DEFAULT_DATE=070100002025
+
+if [ $(date +"%Y") -lt 2025 ]
+then
+	date ${DEFAULT_DATE}
+fi
+
+if [ -e "/dev/rtc" ]
+then
+	hwclock -s
+	if [ $(date +"%Y") -lt 2025 ]
+	then
+		date ${DEFAULT_DATE}
+	fi
+fi
+
+RETRY_AFTER_FAILURE_DELAY=30
+RETRY_AFTER_SUCCESS_DELAY=300
+
+while true
+do
+	wait_delay=${RETRY_AFTER_FAILURE_DELAY}
+
+	if [ -e "/etc/eris-linux/parameters" ]
+	then
+		source "/etc/eris-linux/parameters"
+	fi
+	if [ "${ntp_enable}" = "yes" ] && [ "${ntp_server}" != "" ]
+	then
+		if ping -c1 -w1 "${ntp_server}" >/dev/null 2>&1
+		then
+			# If we succeed in setting the date...
+			if ntpd -d -n -q -p "${ntp_server}" >/dev/null 2>&1
+			then
+				# ... store it in the hardware clock.
+				if [ -e "/dev/misc/rtc" ]
+				then
+					hwclock -w >/dev/null 2>&1
+				fi
+				wait_delay=${RETRY_AFTER_SUCCESS_DELAY}
+			fi
+		fi
+	fi
+	sleep ${wait_delay}
+done

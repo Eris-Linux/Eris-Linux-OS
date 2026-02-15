@@ -1,0 +1,8 @@
+[Unit]
+Description=Eris Linux NTP service
+
+[Service]
+ExecStart=/usr/sbin/eris-ntp
+
+[Install]
+WantedBy=multi-user.target

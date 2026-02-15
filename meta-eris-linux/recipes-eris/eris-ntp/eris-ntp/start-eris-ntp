@@ -1,0 +1,10 @@
+#! /bin/sh
+
+case "$1" in
+	start)	/usr/sbin/eris-ntp & ;;
+	stop)   killall eris-ntp ;;
+	restart) killall eris-ntp ; /usr/sbin/eris-ntp & ;;
+	*) echo "usage: $0 {start | stop | restart}" >&2; exit 1 ;;
+esac
+
+exit 0
