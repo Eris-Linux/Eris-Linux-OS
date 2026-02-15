@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Eris Linux API - System and Containers Update</title>
+	<link rel="icon" href="favicon.ico" type="image/ico">
+	<link href="eris-linux.css" rel="stylesheet">
+</head>
+<body class="eris-body">
+	<div class="eris-global-container">
+		<div class="eris-header">
+			<div class="eris-header-logo">
+				<img src="/png/eris-logo.png" alt="Eris Linux logo"/>
+			</div>
+			<div class="eris-header-menu">
+				<h1>Eris API &mdash; System and Containers Update</h1>
+			</div>
+		</div>
+
+		<div class="eris-panel">
+			<h3>
+				System update
+			</h3>
+			<p style="width: 600px;">
+				Current update status:&nbsp;<b><span id="system-update-status-span"></span></b>
+			</p>
+			<p>
+				Automatic reboot after update:&nbsp;
+					<span>
+						<select id="autoreboot-list">
+							<option value="yes">Yes</option>
+							<option value="no">No</option>
+						</select>
+					</span>
+			</p>
+			<p>
+				Time interval (in seconds) between two contacts with the server:&nbsp;
+				<span><input type="number" min="0" max="604800" id="contact-delay-text" /></span>
+			<p class="eris-color-error" style="width: 600px;" id="system-update-error-p">
+			</p>
+			<form id="status-contact-form" style="width: 600px;">
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" id='status-contact-bt'>Contact the server now</button>
+				</div>
+			</form>
+		</div>
+	
+		<div class="eris-panel">
+			<h3>
+				System rollback
+			</h3>
+			<p>
+				Return to a previous version of the system:
+			</p>
+			<form style="width: 600px;">
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" id='rollback-now-bt'>Return to the last version</button>
+				</div>
+			</form>
+			<p>&nbsp;</p>
+			<form style="width: 600px;">
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" id='factory-now-bt'>Return to the factory preset version</button>
+				</div>
+			</form>
+			<p class="eris-color-error" style="width: 600px;" id="rollback-error-p">
+		</div>
+
+		<div class="eris-panel">
+			<h3>
+				System reboot
+			</h3>
+			<p>
+				Programmed reboot at next contact period:&nbsp;
+				<span>
+					<select id="pending-reboot-list">
+						<option value="yes">Yes</option>
+						<option value="no">No</option>
+					</select>
+				</span>
+			</p>
+			<form style="width: 600px;">
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" id='reboot-now-bt'>Reboot as soon as possible</button>
+				</div>
+			</form>
+			<p class="eris-color-error" style="width: 600px;" id="reboot-error-p">
+		</div>
+
+		<div class="eris-panel">
+			<h3>
+				Containers update
+			</h3>
+			<p>
+				Update policy:&nbsp;
+				<span>
+					<select id="pending-reboot-list">
+						<option value="immediate">As soon as a container is available</option>
+						<option value="atreboot">Only during system reboot</option>
+					</select>
+				</span>
+			</p>
+			<p class="eris-color-error" style="width: 600px;" id="container-error-p">
+		</div>
+		<div class="eris-button-box">
+			<button class="eris-main-button" id="back-bt" style="width: 22em;">
+				Back
+			</button>
+		</div>
+		<br/>&nbsp;<br/>
+	</div>
+<script>
+
+	window.onload = function() { 
+		erase_system_update_error();
+		fetch_and_fill_system_update_status();
+		fetch_and_fill_autoreboot();
+		fetch_and_fill_contact_delay();
+		fetch_and_fill_pending_reboot();
+	};
+
+	
+
+	var system_update_status_timer = null;
+
+	async function fetch_and_fill_system_update_status()
+	{
+		if (system_update_status_timer != null) {
+				clearInterval(system_update_status_timer);
+				system_update_status_timer = null;
+		}
+
+		const response = await fetch("/api/update/status", {
+			method: "GET"
+		});
+		const response_text = await response.text();
+		if (response.ok) {
+			document.getElementById('system-update-status-span').innerHTML = response_text.slice(2);
+		} else {
+			display_system_update_error(response_text);
+		}
+
+		system_update_status_timer = setInterval(fetch_and_fill_system_update_status, 1000);
+	}	
+
+
+
+	function display_system_update_error(message)
+	{
+		document.getElementById('system-update-error-p').style.display = "block";
+		document.getElementById('system-update-error-p').innerHTML = message;
+	}	
+
+
+
+	function erase_system_update_error()
+	{
+		document.getElementById('system-update-error-p').style.display = "none";
+		document.getElementById('system-update-error-p').innerHTML = "";
+	}	
+
+
+
+	async function fetch_and_fill_autoreboot()
+	{
+		const response = await fetch("/api/update/reboot/automatic", {
+			method: "GET"
+		});
+		const response_text = await response.text();
+		if (response.ok) {
+			if ((response_text.slice(0, 1) == "Y") || (response_text.slice(0, 1) == "y"))
+				document.getElementById('autoreboot-list').value = "yes";
+			else
+				document.getElementById('autoreboot-list').value = "no";
+		} else {
+			display_system_update_error(response_text);
+		}
+	}
+
+	
+
+	document.getElementById('autoreboot-list').addEventListener('change', async function(e)
+	{
+		const response = await fetch("/api/update/reboot/automatic?auto=" + document.getElementById('autoreboot-list').value, {
+			method: "PUT"
+		});
+		const response_text = await response.text();
+		if (! response.ok) {
+			display_system_update_error(response_text);
+			fetch_and_fill_autoreboot();
+		}
+	});
+
+
+
+	async function fetch_and_fill_contact_delay()
+	{
+		const response = await fetch("/api/update/contact/period", {
+			method: "GET"
+		});
+		const response_text = await response.text();
+		if (response.ok) {
+			document.getElementById('contact-delay-text').value = response_text;
+		} else {
+			display_system_update_error(response_text);
+		}
+	}
+
+
+
+	document.getElementById('contact-delay-text').addEventListener('change', async function(e)
+	{
+		const response = await fetch("/api/update/contact/period?period=" + document.getElementById('contact-delay-text').value, {
+			method: "PUT"
+		});
+		const response_text = await response.text();
+		if (! response.ok) {
+			display_system_update_error(response_text);
+			fetch_and_fill_contact_delay();
+		}
+	});
+
+
+
+	async function fetch_and_fill_pending_reboot()
+	{
+		const response = await fetch("/api/update/reboot/pending", {
+			method: "GET"
+		});
+		const response_text = await response.text();
+		if (response.ok) {
+			document.getElementById('pending-reboot-list').value = response_text;
+		} else {
+			display_system_update_error(response_text);
+		}
+	}
+
+
+	
+	document.getElementById('pending-reboot-list').addEventListener('change', async function(e)
+	{
+		const response = await fetch("/api/update/reboot/pending?reboot=" + document.getElementById('pending-reboot-list').value, {
+			method: "PUT"
+		});
+		const response_text = await response.text();
+		if (! response.ok) {
+			display_system_update_error(response_text);
+			fetch_and_fill_pending_reboot();
+		}
+	});
+
+
+
+
+/*
+	document.getElementById('interface-list').addEventListener('change', async function(e)
+	{
+		show_interface_status(false);
+		const interface = document.getElementById('interface-list').value;
+		if (interface != "")
+			fetch_and_fill_interface_status(interface);
+	});
+
+
+
+	async function fetch_and_fill_interface_status(interface)
+	{
+		show_interface_setup(false);
+		erase_interface_status_error();
+		const response = await fetch("/api/network/interface/status?name=" + interface, {
+			method: "GET"
+		});
+		const message = await response.text();
+		if (! response.ok) {
+			display_interface_status_error(message);
+			return;
+		}
+		show_interface_status(true);
+		const words = message.split(" ");
+		if (words[0] === "up") {
+			document.getElementById('interface-status-span').innerHTML =
+				"<b>Status</b>: <span style='color: darkgreen;'>UP</span><br/>" + 
+				"<b>IP address</b>:&nbsp;" + words[1] + "<br/>" +
+				"<b>Subnet mask</b>:&nbsp;" + words[2] + "<br/>" +
+				"<b>Gateway IP</b>:&nbsp;" + words[3];
+			
+			document.getElementById('enable-list').value = "enabled";
+			show_interface_setup(true);
+			fetch_and_fill_interface_setup(interface);
+			
+		} else {
+			document.getElementById('interface-status-span').innerHTML =
+				"<b>Status</b>: <span style='color: darkred;'>DOWN</span>";
+			document.getElementById('enable-list').value = "disabled";
+		}
+	}
+
+
+
+	function show_interface_status(display)
+	{
+		if (display){
+			document.getElementById('status-panel').style.display = "flex";
+			document.getElementById('interface-status-h').style.display = "block";
+			document.getElementById('interface-status-p').style.display = "block";
+			document.getElementById('interface-status-span').style.display = "inline";
+			document.getElementById('enable-div').style.display = "block";
+			document.getElementById('enable-list').style.display = "block";
+		} else {
+			document.getElementById('status-panel').style.display = "none";
+			document.getElementById('interface-status-h').style.display = "none";
+			document.getElementById('interface-status-p').style.display = "none";
+			document.getElementById('interface-status-span').style.display = "none";
+			document.getElementById('enable-div').style.display = "none";
+			document.getElementById('enable-list').style.display = "none";
+		}
+	}
+	
+	
+
+	document.getElementById('enable-list').addEventListener('change', async function(e)
+	{
+		erase_interface_status_error();
+
+		let url =   "/api/network/interface/status";
+		url = url + "?name=" + document.getElementById('interface-list').value;
+		if (document.getElementById('enable-list').value === "enabled")
+			url = url + "&status=up";
+		else
+			url = url + "&status=down";
+
+		const response = await fetch(url, {
+			method: "PUT"
+		});
+		if (! response.ok) {
+			const response_text = await response.text();
+			display_interface_status_error(response_text);
+			return;
+		}
+		if (document.getElementById('enable-list').value === "enabled"){
+			show_interface_setup(true);
+			fetch_and_fill_interface_setup(document.getElementById('interface-list').value);
+		} else {
+			show_interface_setup(false);
+		}
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+
+	function display_interface_status_error(message)
+	{
+		document.getElementById('interface-status-error-p').style.display = "flex";
+		document.getElementById('interface-status-error-p').innerHTML = message;
+	}	
+
+
+
+	function erase_interface_status_error()
+	{
+		document.getElementById('interface-status-error-p').style.display = "none";
+		document.getElementById('interface-status-error-p').innerHTML = "";
+	}	
+
+
+
+	async function fetch_and_fill_interface_setup(interface)
+	{
+		erase_interface_setup_error();
+		const response = await fetch("/api/network/interface/config?name=" + interface, {
+			method: "GET"
+		});
+		const message = await response.text();
+		if (! response.ok) {
+			display_interface_setup_error(message);
+			return;
+		}
+		const words = message.split(" ");
+		if (words[1] === "ipv6") {
+			document.getElementById('ipv-list').value = "ipv6";
+		} else {
+			document.getElementById('ipv-list').value = "ipv4";
+		}
+		if (words[2] === "atboot") {
+			document.getElementById('atboot-list').value = "atboot";
+		} else {
+			document.getElementById('atboot-list').value = "notatboot";
+		}
+		if (words[3] === "dhcp") {
+			document.getElementById('mode-list').value = "dhcp";
+			show_static_fields(false);
+		} else {
+			document.getElementById('mode-list').value = "static";
+			document.getElementById('address-text').value = words[4];
+			document.getElementById('netmask-text').value = words[5];
+			document.getElementById('gateway-text').value = words[6];
+			show_static_fields(true);
+		}
+		document.getElementById('setup-save-bt').disabled = true;
+	}
+	
+	
+	
+	function show_interface_setup(display)
+	{
+		if (display) {
+			document.getElementById('setup-panel').style.display = "flex";
+			document.getElementById('atboot-div').style.display = "block";
+			document.getElementById('atboot-label').style.display = "block";
+			document.getElementById('mode-div').style.display = "block";
+			document.getElementById('mode-label').style.display = "block";
+			document.getElementById('ipv-div').style.display = "block";
+			document.getElementById('ipv-label').style.display = "block";
+			document.getElementById('interface-setup-p').style.display = "block";
+			document.getElementById('interface-setup-h').style.display = "block";
+		} else {
+			document.getElementById('setup-panel').style.display = "none";
+			document.getElementById('atboot-div').style.display = "none";
+			document.getElementById('atboot-label').style.display = "none";
+			document.getElementById('mode-div').style.display = "none";
+			document.getElementById('mode-label').style.display = "none";
+			document.getElementById('ipv-div').style.display = "none";
+			document.getElementById('ipv-label').style.display = "none";
+			document.getElementById('interface-setup-p').style.display = "none";
+			document.getElementById('interface-setup-h').style.display = "none";
+		}
+	}
+
+
+	
+	function show_static_fields(style)
+	{
+		if (style) {
+			document.getElementById('ipv-div').style.display = "block";
+			document.getElementById('ipv-label').style.display = "block";
+			document.getElementById('address-div').style.display = "block";
+			document.getElementById('address-label').style.display = "block";
+			document.getElementById('netmask-div').style.display = "block";
+			document.getElementById('netmask-label').style.display = "block";
+			document.getElementById('gateway-div').style.display = "block";
+			document.getElementById('gateway-label').style.display = "block";
+		} else {
+			document.getElementById('ipv-div').style.display = "none";
+			document.getElementById('ipv-label').style.display = "none";
+			document.getElementById('address-div').style.display = "none";
+			document.getElementById('address-label').style.display = "none";
+			document.getElementById('netmask-div').style.display = "none";
+			document.getElementById('netmask-label').style.display = "none";
+			document.getElementById('gateway-div').style.display = "none";
+			document.getElementById('gateway-label').style.display = "none";
+		}
+	}
+	
+
+	
+	function display_interface_setup_error(message)
+	{
+		document.getElementById('interface-setup-error-p').style.color = "red";
+		document.getElementById('interface-setup-error-p').style.display = "flex";
+		document.getElementById('interface-setup-error-p').innerHTML = message;
+	}	
+
+
+
+	function display_interface_setup_result(message)
+	{
+		document.getElementById('interface-setup-error-p').style.color = "black";
+		document.getElementById('interface-setup-error-p').style.display = "flex";
+		document.getElementById('interface-setup-error-p').innerHTML = message;
+	}	
+
+
+
+	function erase_interface_setup_error()
+	{
+		document.getElementById('interface-setup-error-p').style.display = "none";
+	}	
+
+
+
+	document.getElementById('atboot-list').addEventListener('change', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+	document.getElementById('mode-list').addEventListener('change', async function(e)
+	{
+		if (document.getElementById('mode-list').value === "dhcp"){
+			show_static_fields(false);
+		} else {
+			show_static_fields(true);
+		}
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+
+	
+	document.getElementById('ipv-list').addEventListener('change', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+	document.getElementById('address-text').addEventListener('input', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+	document.getElementById('netmask-text').addEventListener('input', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+
+
+
+	document.getElementById('gateway-text').addEventListener('input', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+
+
+
+	document.getElementById('setup-save-form').addEventListener('submit', async function(e)
+	{
+		e.preventDefault();
+		erase_interface_setup_error();
+
+		let url = "/api/network/interface/config?name=" + document.getElementById('interface-list').value;
+		
+		if (document.getElementById('enable-list').value === "disabled")
+		return;
+	
+		if (document.getElementById('atboot-list').value === "atboot")
+			url = url + "&auto=yes";
+		else
+			url = url + "&auto=no";
+
+		if (document.getElementById('ipv-list').value === "ipv4")
+			url = url + "&ipv=4";
+		else
+			url = url + "&ipv=6";
+
+		if (document.getElementById('mode-list').value == "dhcp") {
+			url = url + "&mode=dhcp";
+		} else {
+			url = url + "&mode=static";
+
+			if (check_ip_addr(document.getElementById('address-text').value) != 0) {
+				display_interface_setup_error("Invalid IP address.");
+				return;
+			}
+			url = url + "&address=" + document.getElementById('address-text').value;
+
+			if (check_ip_addr(document.getElementById('netmask-text').value) != 0) {
+				display_interface_setup_error("Invalid sub-network mask.");
+				return;
+			}
+			url = url + "&netmask=" + document.getElementById('netmask-text').value;
+
+			if (check_ip_addr(document.getElementById('gateway-text').value) != 0) {
+				display_interface_setup_error("Invalid gateway address");
+				return;
+			}
+			url = url + "&gateway=" + document.getElementById('gateway-text').value;
+		}
+		const response = await fetch(url, {
+			method: "PUT"
+		});
+		const message = await response.text();
+		if (response.ok) {
+			display_interface_setup_result("Setup saved");
+		} else {
+			display_interface_setup_error(message);
+		}
+	});
+
+
+	
+	async function fetch_and_fill_dns_address()
+	{
+		const response = await fetch("/api/network/dns", {
+			method: "GET"
+		});
+		if (response.ok) {
+			response_text = await response.text();
+			document.getElementById('dns-text').value = response_text;
+			document.getElementById('dns-save-bt').disabled = true;
+		}
+	}
+	
+	
+
+	document.getElementById('dns-text').addEventListener('change', async function(e)
+	{
+		document.getElementById('dns-save-bt').disabled = false;
+	});
+
+
+
+	function display_dns_error(message)
+	{
+		document.getElementById('dns-error-p').style.display = "flex";
+		document.getElementById('dns-error-p').innerHTML = message;
+	}
+
+
+
+	function erase_dns_error()
+	{
+		document.getElementById('dns-error-p').style.display = "none";
+	}
+
+
+
+	document.getElementById('dns-save-form').addEventListener('submit', async function(e)
+	{
+		e.preventDefault();
+		erase_dns_error();
+		if (check_ip_addr(document.getElementById('dns-text').value) != 0) {
+			display_dns_error("Invalid DNS address");
+			return;
+		}
+		const response = await fetch("/api/network/dns?address=" + document.getElementById('dns-text').value, {
+			method: "PUT"
+		});
+		if (! response.ok) {
+			response_text = await response.text();
+			display_dns_error(response_text);
+		}
+	});
+
+
+
+	function check_ip_addr(string)
+	{
+		const ipv4Regex = new RegExp("^(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}$");
+		const ipv6Regex = new RegExp("^([0-9A-Fa-f]{1,4}|:)(:([0-9A-Fa-f]{1,4}|:)){1,7}$")
+		if (ipv4Regex.test(string) || ipv6Regex.test(string))
+			return 0;
+		return -1;
+	}
+
+*/
+
+	document.getElementById('back-bt').addEventListener('click', function(e)
+	{
+		window.location.href = "/index.html";
+	});	
+
+
+</script>
+</body>
+</html>

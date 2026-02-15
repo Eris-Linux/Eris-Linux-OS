@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Eris Linux API - SBOM</title>
+	<link rel="icon" href="favicon.ico" type="image/ico">
+	<link href="eris-linux.css" rel="stylesheet">
+	<style>
+		textarea  {
+			font-family: 'Roboto', Arial, sans-serif;
+			font-size: 16px;
+			line-height: 1.1;
+			resize: none;
+			width: 100%;
+		}
+	</style>
+</head>
+<body class="eris-body">
+	<div class="eris-global-container">
+		<div class="eris-header">
+			<div class="eris-header-logo">
+				<img src="/png/eris-logo.png" alt="Eris Linux logo"/>
+			</div>
+			<div class="eris-header-menu">
+				<h1>Eris Linux API &mdash; Software Bill Of Materials</h1>
+			</div>
+		</div>
+		<div class="eris-panel">
+			<p style="width: 400px;">
+               Installed Packages:<br/>&nbsp;<br/>
+                <select id="package-list">
+					<option value="">-- Choose a Package --</option>
+				</select>
+			</p>
+			<p>
+                <span id="package-info">&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/></span>
+			</p>
+		</div>
+		<div class="eris-panel">
+			<p style="width: 400px;">
+				Present licenses:<br/>&nbsp;<br/>
+				<select id="license-list">
+				</select>
+				<br/>&nbsp;<br/>
+			</p>
+			<form id="license-text-form">
+				<div style="width: 100%; text-align: center;">
+					<button type="submit">Display license</button>
+				</div>
+			</form>
+		</div>
+		<br/>&nbsp;
+		<br/>&nbsp;
+		<br/>
+		<div class="eris-button-box">
+			<button class="eris-main-button" id="back-bt" style="width: 22em;">
+				Back
+			</button>
+		</div>
+	</div>
+
+	<div id="license-text-popup" class="eris-popup" >
+		<div class="eris-popup-content" style="width: 600px;">
+			<p><span id="license-text-close" class="eris-popup-close-btn">&times</span></p>
+			<div class="eris-popup-title" id="license-text-title" style="width: 100%;">
+				License
+			</div>
+			<textarea id="license-text-area" rows="25" readonly ></textarea>
+			<p>&nbsp;</p>
+			<div style="width: 100%; text-align: center;">
+				<input type="button" id="license-text-ok" class="eris-main-button" value="Close">
+			</div>
+		</div>
+	</div>
+
+
+	<script>
+
+		window.onload = function() { 
+			fetch_packages();
+            fetch_licenses();
+		};
+
+
+
+		document.getElementById('back-bt').addEventListener('click', function(e)
+		{
+			window.location.href = "/index.html";
+		});
+
+
+
+		async function fetch_packages() {
+			const response = await fetch("/api/package/list", {
+				method: "GET"
+			});
+			if (response.ok) {
+				response_text = await response.text();
+				const response_array = response_text.split(' ');
+				response_array.forEach(pkg => {
+					const opt = document.createElement('option');
+					opt.value = pkg;
+					opt.textContent = pkg;
+					document.getElementById('package-list').appendChild(opt);
+				});
+			}
+		}
+
+
+
+		async function fetch_licenses() {
+			const response = await fetch("/api/license/list", {
+				method: "GET"
+			});
+			if (response.ok) {
+				response_text = await response.text();
+				const response_array = response_text.split(' ');
+				response_array.forEach(lic => {
+					const opt = document.createElement('option');
+					opt.value = lic;
+					opt.textContent = lic;
+					document.getElementById('license-list').appendChild(opt);
+				});
+			}
+		}
+
+
+
+		document.getElementById('package-list').addEventListener('change', async function(e)
+		{
+			if (document.getElementById('package-list').value == "")
+                return;
+
+			const resp_version = await fetch("/api/package/version?name=" + document.getElementById('package-list').value, {
+				method: "GET"
+			});
+			if (! resp_version.ok)
+                return;
+			const version_text = await resp_version.text();
+
+			const resp_licenses = await fetch("/api/package/licenses?name=" + document.getElementById('package-list').value, {
+				method: "GET"
+			});
+			if (! resp_licenses.ok)
+                return;
+			const licenses_text = await resp_licenses.text();
+
+            document.getElementById('package-info').innerHTML  = "Package name: " + document.getElementById('package-list').value + "<br/><br/>";
+            document.getElementById('package-info').innerHTML += "Version: " + version_text + "<br/><br/>"
+            document.getElementById('package-info').innerHTML += "Licensing:<br/>" + licenses_text;
+		});
+
+
+
+		document.getElementById('license-text-form').addEventListener('submit', async function(e)
+		{
+			e.preventDefault();
+            if (document.getElementById('license-list').value == "")
+                return;
+
+           const response = await fetch("/api/license/text?name=" + document.getElementById('license-list').value, {
+				method: "GET"
+			});
+			if (! response.ok)
+				return;
+			const response_text = await response.text();
+
+			document.getElementById('license-text-title').innerHTML = document.getElementById('license-list').value;
+			document.getElementById('license-text-area').value = response_text;
+			document.getElementById('license-text-popup').style.display = 'flex';			
+		});
+
+		document.getElementById('license-text-close').addEventListener('click', function()
+		{
+			document.getElementById('license-text-popup').style.display = 'none';
+		});
+
+		document.getElementById('license-text-ok').addEventListener('click', function()
+		{
+			document.getElementById('license-text-popup').style.display = 'none';
+		});
+	</script>
+</body>

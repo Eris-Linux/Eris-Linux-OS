@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Eris Linux API - Home</title>
+	<link rel="icon" href="favicon.ico" type="image/ico">
+	<link href="eris-linux.css" rel="stylesheet">
+</head>
+<body class="eris-body">
+	<div class="eris-global-container">
+		<div class="eris-header">
+			<div class="eris-header-logo">
+				<img src="/png/eris-logo.png" alt="Eris Linux logo"/>
+			</div>
+			<div class="eris-header-menu">
+				<h1>Eris Linux API</h1>
+			</div>
+		</div>
+		<div style="margin: auto;">
+			<p>
+				This page is hosted in a container on your <b>Eris Linux</b> device.
+				<br/>
+				<br/>
+				You can access the different features of the Eris Linux system API below.
+				<br/>
+				<br/>
+			</p>
+		</div>
+		<div class="eris-2-columns">
+			<div class="eris-center">
+				<button class="eris-main-button" id="system-bt" style="width: 22em;">
+					<b>System identification</b> related API
+				</button>
+			</div>
+			<div class="eris-center">
+				<button class="eris-main-button" id="sbom-bt" style="width: 22em;">
+					<b>Software Bill of Materials</b>
+				</button>
+			</div>
+		</div>
+		<div class="eris-2-columns">
+			<div class="eris-center">
+				<button class="eris-main-button" id="update-bt" style="width: 22em;">
+					<b>System and Containers Update</b>
+				</button>
+			</div>
+			<div class="eris-center">
+				<button class="eris-main-button" id="network-bt" style="width: 22em;">
+					<b>Network Interfaces</b>
+				</button>
+			</div>
+		</div>
+		<div class="eris-2-columns">
+			<div class="eris-center">
+				<button class="eris-main-button" id="time-bt" style="width: 22em;">
+					<b>Time Setup</b>
+				</button>
+			</div>
+			<div class="eris-center">
+				<button class="eris-main-button" id="gpio-bt" style="width: 22em;">
+					<b>General Purposes Input/Output</b>
+				</button>
+			</div>
+		</div>
+		<div class="eris-2-columns">
+			<div class="eris-center">
+				<button class="eris-main-button" id="wdog-bt" style="width: 22em;">
+					<b>Watchdog Setup</b> <em>(not implemented yet)</em>
+				</button>
+			</div>
+			<div class="eris-center">
+				<button class="eris-main-button" id="display-bt" style="width: 22em;">
+					<b>Display Features</b> <em>(not implemented yet)</em>
+				</button>
+			</div>
+		</div>
+		<div class="eris-2-columns">
+			<div class="eris-center">
+				<button class="eris-main-button" id="audio-bt" style="width: 22em;">
+					<b>Audio Features</b> <em>(not implemented yet)</em>
+				</button>
+			</div>
+			<div class="eris-center">
+				&nbsp;
+			</div>
+		</div>
+	</div>
+
+	<script>
+		document.getElementById('system-bt').addEventListener('click', function(e) {
+			window.location.href = "/system-api.html";
+		});
+
+		document.getElementById('sbom-bt').addEventListener('click', function(e) {
+			window.location.href = "/sbom-api.html";
+		});
+
+		document.getElementById('update-bt').addEventListener('click', function(e) {
+			window.location.href = "/update-api.html";
+		});
+
+		document.getElementById('network-bt').addEventListener('click', function(e) {
+			window.location.href = "/net-api.html";
+		});
+
+		document.getElementById('time-bt').addEventListener('click', function(e) {
+			window.location.href = "/time-api.html";
+		});
+
+		document.getElementById('gpio-bt').addEventListener('click', function(e) {
+			window.location.href = "/gpio-api.html";
+		});
+/*
+		document.getElementById('display-bt').addEventListener('click', function(e) {
+			window.location.href = "/display-api.html";
+		});
+		document.getElementById('wdog-bt').addEventListener('click', function(e) {
+			window.location.href = "/wdog-api.html";
+		});
+		document.getElementById('audio-bt').addEventListener('click', function(e) {
+			window.location.href = "/audio-api.html";
+		});
+*/
+	</script>
+</body>

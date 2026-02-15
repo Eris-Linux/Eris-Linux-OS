@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Eris Linux API - Network</title>
+	<link rel="icon" href="favicon.ico" type="image/ico">
+	<link href="eris-linux.css" rel="stylesheet">
+	<style>
+		textarea  {
+			font-family: 'Roboto', Arial, sans-serif;
+			font-size: 16px;
+			line-height: 1.1;
+			resize: none;
+			width: 100%;
+		}
+	</style>
+</head>
+<body class="eris-body">
+	<div class="eris-global-container">
+		<div class="eris-header">
+			<div class="eris-header-logo">
+				<img src="/png/eris-logo.png" alt="Eris Linux logo"/>
+			</div>
+			<div class="eris-header-menu">
+				<h1>Eris API &mdash; Network Setup</h1>
+			</div>
+		</div>
+
+		<div class="eris-panel">
+			<h3>
+				Network interface:
+			</h3>
+			<p style="width: 600px;">
+				<div style="margin-left: 8em;">
+					<select id="interface-list">
+						<option value="" disabled selected hidden>-- Choose a network interface --</option>
+					</select>
+				</div>
+			</p>
+		</div>
+
+		<div id="status-panel" class="eris-panel" style="display:none; flex-direction: column;">
+			<h3 id="interface-status-h" style="display: none;">
+				Current state of the interface
+			</h3>
+			<p style="width: 600px; display: none;" id="interface-status-p">
+				<span id="interface-status-span"></span>
+			</p>
+			<br/>&nbsp;<br/>
+			<div id="enable-div" style="display: none; margin-left: 8em;">
+				<select id="enable-list">
+					<option value="disabled">Interface disabled</option>
+					<option value="enabled">Interface enabled</option>
+				</select>
+			</div>
+			<br/>&nbsp;<br/>
+			<p class="eris-color-error" style="width: 600px; display: none;" id="interface-status-error-p">
+		</div>
+
+		<div id="setup-panel" class="eris-panel" style="display:none; flex-direction: column;">
+			<h3 id="interface-setup-h" style="display:none;">
+				Interface setup
+			</h3>
+			<p style="width: 600px; display: none;" id="interface-setup-p" >
+
+				⚠️ <em>This setup will only take effect after the device is rebooted.</em>
+
+				<div id="atboot-label" style="display: none;">
+					Time of interface activation:
+					<br/>
+				</div>
+				<div id="atboot-div" style="display: none; margin-left: 8em;">
+					<select id="atboot-list">
+						<option value="atboot">Activated at boot</option>
+						<option value="ondemand">Activated on demand</option>
+					</select>
+				</div>
+				<br/>&nbsp;<br/>
+				<div id="mode-label" style="display: none;">
+					Method used for interface configuration:
+					</br>
+				</div>
+				<div id="mode-div" style="display: none; margin-left: 8em;">
+					<select id="mode-list">
+						<option value="dhcp">DHCP</option>
+						<option value="static">Static setup</option>
+					</select>
+				</div>
+				<br/>&nbsp;<br/>
+				<div id="ipv-label" style="display: none;">
+					Version of IP addresses to use:
+					</br>
+				</div>
+				<div id="ipv-div" style="display: none; margin-left: 8em;">
+					<select id="ipv-list">
+						<option value="ipv4">IP v.4</option>
+						<option value="ipv6">IP v.6</option>
+					</select>
+				</div>
+				<br/>&nbsp;<br/>
+				<div id="address-label" style="display: none;">
+					IP Address of the device:
+				</div>
+				<div id="address-div" style="display: none; margin-left: 8em;">
+					<input type="text" id="address-text" placeholder="(ex: 192.168.1.1)" />
+				</div>
+				<div id="netmask-label" style="display: none;">
+					Sub-network IP mask:
+				</div>
+				<div id="netmask-div" style="display: none; margin-left: 8em;">
+					<input type="text" id="netmask-text" placeholder="(ex: 255.255.255.0)" />
+				</div>
+				<div id="gateway-label" style="display: none;">
+					Gateway IP address:
+				</div>
+				<div id="gateway-div" style="display: none; margin-left: 8em;">
+					<input type="text" id="gateway-text" placeholder="(ex: 192.168.1.254)" />
+				</div>
+			</p>
+			<p>&nbsp;</p>
+			<p style="width: 600px; display: none;" id="interface-setup-error-p">
+			</p>
+			<form id="setup-save-form" style="width: 600px;">
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" id="setup-save-bt">Save</button>
+				</div>
+			</form>
+		</div>
+
+		<div id="dns-panel" class="eris-panel" style="flex-direction: column;">
+			<h3 id="dns-setup-h">
+				Domain Name Server (DNS)
+			</h3>
+			<p style="width: 600px; id="dns-setup-p" >
+
+				⚠️ <em>This parameter will take effect immediately.</em>
+
+				<br/>&nbsp;<br/>
+				<div id="dns-label">
+					DNS IP address:
+					<br/>
+				</div>
+				<div id="dns-div" style="margin-left: 8em;">
+					<input type="text" id="dns-text" placeholder="(ex: 8.8.8.8)" />
+				</div>
+			</p>
+			<p>&nbsp;</p>
+			<p class="eris-color-error" style="width: 600px;" id="dns-error-p">
+			</p>
+			<form id="dns-save-form" style="width: 600px;">
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" id='dns-save-bt'>Save</button>
+				</div>
+			</form>
+		</div>
+		<br/>&nbsp;
+		<br/>
+		<div class="eris-button-box">
+			<button class="eris-main-button" id="back-bt" style="width: 22em;">
+				Back
+			</button>
+		</div>
+	</div>
+
+<script>
+
+	window.onload = function() { 
+		fetch_and_fill_interface_list();
+		fetch_and_fill_dns_address();
+	};
+	
+	
+	
+	async function fetch_and_fill_interface_list()
+	{
+		const response = await fetch("/api/network/interface/list", {
+			method: "GET"
+		});
+		if (response.ok) {
+			const response_text = await response.text();
+			const response_array = response_text.split(' ');
+			response_array.forEach(interface => {
+				const opt = document.createElement('option');
+				opt.value = interface;
+				opt.textContent = interface;
+				document.getElementById('interface-list').appendChild(opt);
+			});
+		}
+		document.getElementById('interface-list').value = "";
+		show_interface_status(false);
+	}
+	
+	
+
+	document.getElementById('interface-list').addEventListener('change', async function(e)
+	{
+		show_interface_status(false);
+		const interface = document.getElementById('interface-list').value;
+		if (interface != "")
+			fetch_and_fill_interface_status(interface);
+	});
+
+
+
+	async function fetch_and_fill_interface_status(interface)
+	{
+		show_interface_setup(false);
+		erase_interface_status_error();
+		const response = await fetch("/api/network/interface/status?name=" + interface, {
+			method: "GET"
+		});
+		const message = await response.text();
+		if (! response.ok) {
+			display_interface_status_error(message);
+			return;
+		}
+		show_interface_status(true);
+		const words = message.split(" ");
+		if (words[0] === "up") {
+			document.getElementById('interface-status-span').innerHTML =
+				"<b>Status</b>: <span style='color: darkgreen;'>UP</span><br/>" + 
+				"<b>IP address</b>:&nbsp;" + words[1] + "<br/>" +
+				"<b>Subnet mask</b>:&nbsp;" + words[2] + "<br/>" +
+				"<b>Gateway IP</b>:&nbsp;" + words[3];
+			
+			document.getElementById('enable-list').value = "enabled";
+			show_interface_setup(true);
+			fetch_and_fill_interface_setup(interface);
+			
+		} else {
+			document.getElementById('interface-status-span').innerHTML =
+				"<b>Status</b>: <span style='color: darkred;'>DOWN</span>";
+			document.getElementById('enable-list').value = "disabled";
+		}
+	}
+
+
+
+	function show_interface_status(display)
+	{
+		if (display){
+			document.getElementById('status-panel').style.display = "flex";
+			document.getElementById('interface-status-h').style.display = "block";
+			document.getElementById('interface-status-p').style.display = "block";
+			document.getElementById('interface-status-span').style.display = "inline";
+			document.getElementById('enable-div').style.display = "block";
+			document.getElementById('enable-list').style.display = "block";
+		} else {
+			document.getElementById('status-panel').style.display = "none";
+			document.getElementById('interface-status-h').style.display = "none";
+			document.getElementById('interface-status-p').style.display = "none";
+			document.getElementById('interface-status-span').style.display = "none";
+			document.getElementById('enable-div').style.display = "none";
+			document.getElementById('enable-list').style.display = "none";
+		}
+	}
+	
+	
+
+	document.getElementById('enable-list').addEventListener('change', async function(e)
+	{
+		erase_interface_status_error();
+
+		let url =   "/api/network/interface/status";
+		url = url + "?name=" + document.getElementById('interface-list').value;
+		if (document.getElementById('enable-list').value === "enabled")
+			url = url + "&status=up";
+		else
+			url = url + "&status=down";
+
+		const response = await fetch(url, {
+			method: "PUT"
+		});
+		if (! response.ok) {
+			const response_text = await response.text();
+			display_interface_status_error(response_text);
+			return;
+		}
+		if (document.getElementById('enable-list').value === "enabled"){
+			show_interface_setup(true);
+			fetch_and_fill_interface_setup(document.getElementById('interface-list').value);
+		} else {
+			show_interface_setup(false);
+		}
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+
+	function display_interface_status_error(message)
+	{
+		document.getElementById('interface-status-error-p').style.display = "flex";
+		document.getElementById('interface-status-error-p').innerHTML = message;
+	}	
+
+
+
+	function erase_interface_status_error()
+	{
+		document.getElementById('interface-status-error-p').style.display = "none";
+		document.getElementById('interface-status-error-p').innerHTML = "";
+	}	
+
+
+
+	async function fetch_and_fill_interface_setup(interface)
+	{
+		erase_interface_setup_error();
+		const response = await fetch("/api/network/interface/config?name=" + interface, {
+			method: "GET"
+		});
+		const message = await response.text();
+		if (! response.ok) {
+			display_interface_setup_error(message);
+			return;
+		}
+		const words = message.split(" ");
+		if (words[1] === "ipv6") {
+			document.getElementById('ipv-list').value = "ipv6";
+		} else {
+			document.getElementById('ipv-list').value = "ipv4";
+		}
+		if (words[2] === "atboot") {
+			document.getElementById('atboot-list').value = "atboot";
+		} else {
+			document.getElementById('atboot-list').value = "ondemand";
+		}
+		if (words[3] === "dhcp") {
+			document.getElementById('mode-list').value = "dhcp";
+			show_static_fields(false);
+		} else {
+			document.getElementById('mode-list').value = "static";
+			document.getElementById('address-text').value = words[4];
+			document.getElementById('netmask-text').value = words[5];
+			document.getElementById('gateway-text').value = words[6];
+			show_static_fields(true);
+		}
+		document.getElementById('setup-save-bt').disabled = true;
+	}
+	
+	
+	
+	function show_interface_setup(display)
+	{
+		if (display) {
+			document.getElementById('setup-panel').style.display = "flex";
+			document.getElementById('atboot-div').style.display = "block";
+			document.getElementById('atboot-label').style.display = "block";
+			document.getElementById('mode-div').style.display = "block";
+			document.getElementById('mode-label').style.display = "block";
+			document.getElementById('ipv-div').style.display = "block";
+			document.getElementById('ipv-label').style.display = "block";
+			document.getElementById('interface-setup-p').style.display = "block";
+			document.getElementById('interface-setup-h').style.display = "block";
+		} else {
+			document.getElementById('setup-panel').style.display = "none";
+			document.getElementById('atboot-div').style.display = "none";
+			document.getElementById('atboot-label').style.display = "none";
+			document.getElementById('mode-div').style.display = "none";
+			document.getElementById('mode-label').style.display = "none";
+			document.getElementById('ipv-div').style.display = "none";
+			document.getElementById('ipv-label').style.display = "none";
+			document.getElementById('interface-setup-p').style.display = "none";
+			document.getElementById('interface-setup-h').style.display = "none";
+		}
+	}
+
+
+	
+	function show_static_fields(style)
+	{
+		if (style) {
+			document.getElementById('ipv-div').style.display = "block";
+			document.getElementById('ipv-label').style.display = "block";
+			document.getElementById('address-div').style.display = "block";
+			document.getElementById('address-label').style.display = "block";
+			document.getElementById('netmask-div').style.display = "block";
+			document.getElementById('netmask-label').style.display = "block";
+			document.getElementById('gateway-div').style.display = "block";
+			document.getElementById('gateway-label').style.display = "block";
+		} else {
+			document.getElementById('ipv-div').style.display = "none";
+			document.getElementById('ipv-label').style.display = "none";
+			document.getElementById('address-div').style.display = "none";
+			document.getElementById('address-label').style.display = "none";
+			document.getElementById('netmask-div').style.display = "none";
+			document.getElementById('netmask-label').style.display = "none";
+			document.getElementById('gateway-div').style.display = "none";
+			document.getElementById('gateway-label').style.display = "none";
+		}
+	}
+	
+
+	
+	function display_interface_setup_error(message)
+	{
+		document.getElementById('interface-setup-error-p').style.color = "red";
+		document.getElementById('interface-setup-error-p').style.display = "flex";
+		document.getElementById('interface-setup-error-p').innerHTML = message;
+	}	
+
+
+
+	function display_interface_setup_result(message)
+	{
+		document.getElementById('interface-setup-error-p').style.color = "black";
+		document.getElementById('interface-setup-error-p').style.display = "flex";
+		document.getElementById('interface-setup-error-p').innerHTML = message;
+	}	
+
+
+
+	function erase_interface_setup_error()
+	{
+		document.getElementById('interface-setup-error-p').style.display = "none";
+	}	
+
+
+
+	document.getElementById('atboot-list').addEventListener('change', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+	document.getElementById('mode-list').addEventListener('change', async function(e)
+	{
+		if (document.getElementById('mode-list').value === "dhcp"){
+			show_static_fields(false);
+		} else {
+			show_static_fields(true);
+		}
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+
+	
+	document.getElementById('ipv-list').addEventListener('change', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+	document.getElementById('address-text').addEventListener('input', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+	
+	
+	
+	document.getElementById('netmask-text').addEventListener('input', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+
+
+
+	document.getElementById('gateway-text').addEventListener('input', async function(e)
+	{
+		document.getElementById('setup-save-bt').disabled = false;
+	});
+
+
+
+	document.getElementById('setup-save-form').addEventListener('submit', async function(e)
+	{
+		e.preventDefault();
+		erase_interface_setup_error();
+
+		let url = "/api/network/interface/config?name=" + document.getElementById('interface-list').value;
+		
+		if (document.getElementById('enable-list').value === "disabled")
+		return;
+	
+		if (document.getElementById('atboot-list').value === "atboot")
+			url = url + "&auto=yes";
+		else
+			url = url + "&auto=no";
+
+		if (document.getElementById('ipv-list').value === "ipv4")
+			url = url + "&ipv=4";
+		else
+			url = url + "&ipv=6";
+
+		if (document.getElementById('mode-list').value == "dhcp") {
+			url = url + "&mode=dhcp";
+		} else {
+			url = url + "&mode=static";
+
+			if (check_ip_addr(document.getElementById('address-text').value) != 0) {
+				display_interface_setup_error("Invalid IP address.");
+				return;
+			}
+			url = url + "&address=" + document.getElementById('address-text').value;
+
+			if (check_ip_addr(document.getElementById('netmask-text').value) != 0) {
+				display_interface_setup_error("Invalid sub-network mask.");
+				return;
+			}
+			url = url + "&netmask=" + document.getElementById('netmask-text').value;
+
+			if (check_ip_addr(document.getElementById('gateway-text').value) != 0) {
+				display_interface_setup_error("Invalid gateway address");
+				return;
+			}
+			url = url + "&gateway=" + document.getElementById('gateway-text').value;
+		}
+		const response = await fetch(url, {
+			method: "PUT"
+		});
+		const message = await response.text();
+		if (response.ok) {
+			display_interface_setup_result("Setup saved");
+		} else {
+			display_interface_setup_error(message);
+		}
+	});
+
+
+	
+	async function fetch_and_fill_dns_address()
+	{
+		const response = await fetch("/api/network/dns", {
+			method: "GET"
+		});
+		if (response.ok) {
+			response_text = await response.text();
+			document.getElementById('dns-text').value = response_text;
+			document.getElementById('dns-save-bt').disabled = true;
+		}
+	}
+	
+	
+
+	document.getElementById('dns-text').addEventListener('change', async function(e)
+	{
+		document.getElementById('dns-save-bt').disabled = false;
+	});
+
+
+
+	function display_dns_error(message)
+	{
+		document.getElementById('dns-error-p').style.display = "flex";
+		document.getElementById('dns-error-p').innerHTML = message;
+	}
+
+
+
+	function erase_dns_error()
+	{
+		document.getElementById('dns-error-p').style.display = "none";
+	}
+
+
+
+	document.getElementById('dns-save-form').addEventListener('submit', async function(e)
+	{
+		e.preventDefault();
+		erase_dns_error();
+		if (check_ip_addr(document.getElementById('dns-text').value) != 0) {
+			display_dns_error("Invalid DNS address");
+			return;
+		}
+		const response = await fetch("/api/network/dns?address=" + document.getElementById('dns-text').value, {
+			method: "PUT"
+		});
+		if (! response.ok) {
+			response_text = await response.text();
+			display_dns_error(response_text);
+		}
+	});
+
+
+
+	function check_ip_addr(string)
+	{
+		const ipv4Regex = new RegExp("^(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}$");
+		const ipv6Regex = new RegExp("^([0-9A-Fa-f]{1,4}|:)(:([0-9A-Fa-f]{1,4}|:)){1,7}$")
+		if (ipv4Regex.test(string) || ipv6Regex.test(string))
+			return 0;
+		return -1;
+	}
+
+
+
+	document.getElementById('back-bt').addEventListener('click', function(e)
+	{
+		window.location.href = "/index.html";
+	});	
+
+
+</script>
+</body>
+</html>

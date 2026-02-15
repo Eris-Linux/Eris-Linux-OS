@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Eris Linux API - Home</title>
+	<link rel="icon" href="favicon.ico" type="image/ico">
+	<link href="eris-linux.css" rel="stylesheet">
+</head>
+<body class="eris-body">
+	<div class="eris-global-container">
+		<div class="eris-header">
+			<div class="eris-header-logo">
+				<img src="/png/eris-logo.png" alt="Eris Linux logo"/>
+			</div>
+	
+			<div class="eris-header-menu">
+				<h1>Eris Linux API &mdash; System identification</h1>
+			</div>
+		</div>
+		<div style="margin: 0 auto;">
+			<p>
+				System model: <b><span id="model-id"></span></b>
+			</p>
+			<p>
+				System type: <b><span id="type-id"></span></b>
+			</p>
+			<p>
+				System UUID: <b><span id="uuid-id"></span></b>
+			</p>
+			<p>
+				System version: <b><span id="version-id"></span></b>
+			</p>
+			<div class="eris-scrollable-menu" id="containers-id" style="padding: 20px;">
+                        </div>
+		</div>
+		<br/>&nbsp;
+		<br/>&nbsp;
+		<br/>
+		<div class="eris-button-box">
+			<button class="eris-main-button" id="back-bt" style="width: 22em;">
+				Back
+			</button>
+		</div>
+	</div>
+
+	<script>
+		window.onload = function() {
+			fetch_api_data();
+		};
+
+		async function fetch_api_data() {
+
+			const resp_model = await fetch("/api/system/model", {
+				method: "GET"
+			});
+			if (resp_model.ok) {
+				document.getElementById('model-id').innerHTML = await resp_model.text();
+			}
+
+			const resp_type = await fetch("/api/system/type", {
+				method: "GET"
+			});
+			if (resp_type.ok) {
+				document.getElementById('type-id').innerHTML = await resp_type.text();
+			}
+
+			const resp_uuid = await fetch("/api/system/uuid", {
+				method: "GET"
+			});
+			if (resp_uuid.ok) {
+				document.getElementById('uuid-id').innerHTML = await resp_uuid.text();
+			}
+
+			const resp_version = await fetch("/api/system/version", {
+				method: "GET"
+			}); 
+			if (resp_version.ok) {
+				document.getElementById('version-id').innerHTML = await resp_version.text();
+			}
+
+			containers_count = 0;
+			const resp_count = await fetch("/api/container/count", {
+				method: "GET"
+
+			});
+			if (resp_count.ok) {
+				const count_text = await resp_count.text();
+				containers_count = parseInt(count_text);
+				if (isNaN(containers_count))
+					containers_count = 0;
+			}
+
+			if (containers_count > 0) {
+				container_name = new Array(containers_count);
+				container_version = new Array(containers_count);
+				container_div = new Array(containers_count);
+
+				for (i = 0; i < containers_count; i++) {
+					container_div[i] = document.createElement('div');
+					document.getElementById("containers-id").appendChild(container_div[i]);
+				}
+
+				for (i = 0; i < containers_count; i++) {					
+					const resp_name = await fetch("/api/container/name?index=" + i, {
+		                                method: "GET"
+		                        });
+					if (resp_name.ok) {
+						container_name[i] = await resp_name.text();
+		                        }
+				}
+
+				for (i = 0; i < containers_count; i++) {					
+					const resp_version = await fetch("/api/container/version?index=" + i, {
+		                                method: "GET"
+		                        });
+					if (resp_version.ok) {
+						container_version[i] = await resp_version.text();
+		                        }
+				}
+
+				for (i = 0; i < containers_count; i++) {
+					container_div[i].innerHTML = "Container #" + i + ": ";
+					if (container_name[i] != "") {
+						container_div[i].innerHTML += container_name[i];
+						container_div[i].innerHTML += "  (v." + container_version[i] + ")";
+					}
+				}
+			}
+		}
+
+		document.getElementById('back-bt').addEventListener('click', function(e) {
+			window.location.href = "/index.html";
+		});
+
+	</script>
+</body>

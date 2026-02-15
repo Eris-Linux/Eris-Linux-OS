@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Eris Linux API - Time</title>
+	<link rel="icon" href="favicon.ico" type="image/ico">
+	<link href="eris-linux.css" rel="stylesheet">
+</head>
+<body class="eris-body">
+	<div class="eris-global-container">
+		<div class="eris-header">
+			<div class="eris-header-logo">
+				<img src="/png/eris-logo.png" alt="Eris Linux logo"/>
+			</div>
+			<div class="eris-header-menu">
+				<h1>Eris Linux API &mdash; Time setup</h1>
+			</div>
+		</div>
+		<div class="eris-panel">
+			<p>
+				<span style='font-size: larger; font-weight: bold;'>Network Time Protocol</span><br/>
+				<br/>
+				<input type="checkbox" id="use-ntp-check"></input> Use the NTP protocol to automatically set the system time.<br/>
+				&nbsp;<br/>
+				NTP server: <b><span id="ntp-server-text"></span></b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button class="eris-button" id="ntp-server-bt"><img height='22px'  style='margin: 0px 0px 2px 0px;' src="png/edit.png"> Edit</button>
+			</p>
+			<p>
+				<span style='font-size: larger; font-weight: bold;'>Timezone</span><br/>
+				<br/>
+				<select id="timezone-list">
+					<option value="">-- Choose a timezone --</option>
+				</select>
+				<br/>&nbsp;<br/>
+			</p>
+			<p>
+				<span style='font-size: larger; font-weight: bold;'>System Time</span><br/>
+				<br/>
+				<span id="system-time"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button class="eris-button" id="system-time-bt"><img height='22px'  style='margin: 0px 0px 2px 0px;' src="png/edit.png"> Edit</button>
+				<br/>
+			</p>
+			<p>
+				<span style='font-size: larger; font-weight: bold;'>Local Time</span><br/>
+				<br/>
+				<span id="local-time"></span>
+			</p>
+		</div>
+		<br/>&nbsp;
+		<br/>&nbsp;
+		<br/>
+		<div class="eris-button-box">
+			<button class="eris-main-button" id="back-bt" style="width: 22em;">
+				Back
+			</button>
+		</div>
+	</div>
+
+
+	<div id="ntp-server-setup-popup" class="eris-popup" >
+		<div class="eris-popup-content" style="width: 600px;">
+			<p><span id="ntp-server-setup-close" class="eris-popup-close-btn">&times</span></p>
+			<div class="eris-popup-title">
+				NTP Server Setup
+			</div>
+			<form id="ntp-server-setup-form">
+				<p>
+					NTP server:&nbsp;<input type="text" id="ntp-server-setup-name" required/>
+				</p>
+				<p id="ntp-server-setup-error" style="color: red;">&nbsp;</p>
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" class="eris-main-button" style='position: relative; top: 20px;'>Ok</button>
+					<button type="reset" class="eris-main-button" style='position: relative; top: 20px;' id="ntp-server-setup-cancel">Cancel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+
+	<div id="system-time-setup-popup" class="eris-popup" >
+		<div class="eris-popup-content" style="width: 600px;">
+			<p><span id="system-time-setup-close" class="eris-popup-close-btn">&times</span></p>
+			<div class="eris-popup-title">
+				System Time Setup
+			</div>
+			<form id="system-time-setup-form">
+				<p>
+					<label for="system-time-setup-date">Date:</label>
+					<input type="date" id="system-time-setup-date" required>
+
+					<label for="system-time-setup-time">Time:</label>
+					<input type="time" id="system-time-setup-time" step="1" required>
+				</p>
+				<p id="system-time-setup-error" style="color: red;">&nbsp;</p>
+				<div style="width: 100%; text-align: center;">
+					<button type="submit" class="eris-main-button" style='position: relative; top: 20px;'>Ok</button>
+					<button type="reset" class="eris-main-button" style='position: relative; top: 20px;' id="system-time-setup-cancel">Cancel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+
+	<script>
+
+		window.onload = function() {
+			fetch_ntp_setup();
+			fetch_timezone();
+			fill_system_and_local_time();
+		};
+
+
+
+		async function fetch_ntp_setup() {
+			const resp_use_ntp = await fetch("/api/time/ntp", {
+				method: "GET"
+			});
+			if (resp_use_ntp.ok) {
+				use_ntp = await resp_use_ntp.text();
+				document.getElementById('use-ntp-check').checked = (use_ntp === "yes");
+			}
+
+			const resp_ntp_server = await fetch("/api/time/ntp/server", {
+				method: "GET"
+			});
+			if (resp_ntp_server.ok) {
+				document.getElementById('ntp-server-text').innerHTML = await resp_ntp_server.text();
+			}
+		}
+
+
+
+		async function fetch_timezone() {
+
+			const timezone_list = document.getElementById('timezone-list');
+			const resp_tz_list = await fetch("/api/time/zone/list", {
+				method: "GET"
+			});
+			if (resp_tz_list.ok) {
+				const tz_raw = await resp_tz_list.text();
+				const tz_array = tz_raw.split(' ');
+				tz_array.forEach(tz => {
+					const opt = document.createElement('option');
+					opt.value = tz;
+					opt.textContent = tz;
+					timezone_list.appendChild(opt);
+				});
+			}
+			const resp_tz = await fetch("/api/time/zone", {
+				method: "GET"
+			});
+			if (resp_tz.ok) {
+				const tz_txt = await resp_tz.text();
+				timezone_list.value = tz_txt;
+			}
+		}
+
+
+		let system_date=""
+		let system_time=""
+		let display_timer = null;
+
+		async function fill_system_and_local_time() {
+			if (display_timer != null) {
+				clearInterval(display_timer);
+				display_timer = null;
+			}
+			const resp_local_time = await fetch("/api/time/local", {
+				method: "GET"
+			});
+			let local_time_text = "--/--/-- --:--:--";
+			if (resp_local_time.ok) {
+				local_time_text = await resp_local_time.text();
+				local_time_text = local_time_text.slice(0, -7);
+			}			
+
+			const resp_system_time = await fetch("/api/time/system", {
+				method: "GET"
+			});
+			let system_time_text = "--/--/-- --:--:--";
+			if (resp_system_time.ok) {
+				system_time_text = await resp_system_time.text();
+				system_time_text = system_time_text.slice(0, -7);
+				system_date = system_time_text.slice(0,-9);
+				system_time = system_time_text.slice(11);
+			}
+
+			document.getElementById('local-time').innerHTML = local_time_text;
+			document.getElementById('system-time').innerHTML = system_time_text;
+			display_timer = setInterval(fill_system_and_local_time, 1000);
+		}
+
+		window.onbeforeunload = function() {
+			if (display_timer != null)
+				clearInterval(display_timer);
+			display_timer = null;
+		};
+		
+		
+
+		document.getElementById('back-bt').addEventListener('click', function(e)
+		{
+			window.location.href = "/index.html";
+		});
+
+
+
+		document.getElementById('use-ntp-check').addEventListener('click', async function(e)
+		{
+			const response = await fetch("/api/time/ntp?status=" + (document.getElementById('use-ntp-check').checked ? "yes" : "no"), {
+				method: "PUT"
+			});
+			if (response.ok){
+				const ok = await response.text();
+			}
+		});
+
+
+
+		document.getElementById('ntp-server-bt').addEventListener('click', function(e)
+		{
+			e.preventDefault();
+			document.getElementById('ntp-server-setup-error').innerHTML = "&nbsp;";
+			document.getElementById('ntp-server-setup-name').value = document.getElementById('ntp-server-text').innerHTML;
+			document.getElementById('ntp-server-setup-popup').style.display = 'flex';
+		});
+
+
+
+		document.getElementById('ntp-server-setup-close').addEventListener('click', function()
+		{
+			document.getElementById('ntp-server-setup-popup').style.display = 'none';
+		});
+
+
+		document.getElementById('ntp-server-setup-cancel').addEventListener('click', function()
+		{
+			document.getElementById('ntp-server-setup-popup').style.display = 'none';
+		});
+
+
+		document.getElementById('ntp-server-setup-form').addEventListener('submit', async function(e)
+		{
+			e.preventDefault();
+			const response = await fetch("/api/time/ntp/server?server=" + document.getElementById('ntp-server-setup-name').value , {
+				method: "PUT"
+			});
+			if (response.ok){
+				const text = await response.text();
+				fetch_ntp_setup();
+				document.getElementById('ntp-server-setup-popup').style.display = 'none';
+				return;
+			}
+			const errorText = await response.text();
+			document.getElementById('ntp-server-setup-error').innerHTML = `${errorText}`;
+		});
+
+
+
+		document.getElementById('system-time-bt').addEventListener('click', function(e)
+		{
+			e.preventDefault();
+			document.getElementById('system-time-setup-error').innerHTML = "&nbsp;";
+			document.getElementById('system-time-setup-date').value = system_date;
+			document.getElementById('system-time-setup-time').value = system_time;
+			document.getElementById('system-time-setup-popup').style.display = 'flex';
+		});
+
+
+		document.getElementById('system-time-setup-close').addEventListener('click', function()
+		{
+			document.getElementById('system-time-setup-popup').style.display = 'none';
+		});
+
+
+		document.getElementById('system-time-setup-cancel').addEventListener('click', function()
+		{
+			document.getElementById('system-time-setup-popup').style.display = 'none';
+		});
+
+
+		document.getElementById('system-time-setup-form').addEventListener('submit', async function(e)
+		{
+			e.preventDefault();
+			time_str = document.getElementById('system-time-setup-date').value + "T" + document.getElementById('system-time-setup-time').value;
+			const response = await fetch("/api/time/system?time=" + time_str , {
+				method: "PUT"
+			});
+			if (response.ok){
+				const text = await response.text();
+				fill_system_and_local_time();
+				document.getElementById('system-time-setup-popup').style.display = 'none';
+				return;
+			}
+			const errorText = await response.text();
+			document.getElementById('system-time-setup-error').innerHTML = `${errorText}`;
+		});
+
+
+
+		document.getElementById('timezone-list').addEventListener('change', async function(e)
+		{
+			const resp_set_tz = await fetch("/api/time/zone?zone=" + document.getElementById('timezone-list').value , {
+				method: "PUT"
+			});
+			if (resp_set_tz.ok){
+				const tz_text = await resp_set_tz.text();
+			}
+		});
+
+
+
+
+
+	</script>
+</body>

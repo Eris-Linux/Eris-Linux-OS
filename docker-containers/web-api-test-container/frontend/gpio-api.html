@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Eris Linux API - GPIO</title>
+	<link rel="icon" href="favicon.ico" type="image/ico">
+	<link href="eris-linux.css" rel="stylesheet">
+	<style>
+		textarea  {
+			font-family: 'Roboto', Arial, sans-serif;
+			font-size: 16px;
+			line-height: 1.1;
+			resize: none;
+			width: 100%;
+		}
+	</style>
+</head>
+<body class="eris-body">
+	<div class="eris-global-container">
+		<div class="eris-header">
+			<div class="eris-header-logo">
+				<img src="/png/eris-logo.png" alt="Eris Linux logo"/>
+			</div>
+			<div class="eris-header-menu">
+				<h1>Eris API &mdash; General Purpose Input/Ouput</h1>
+			</div>
+		</div>
+		<div class="eris-panel">
+			<p style="width: 400px;">
+				Select the GPIO line to work with:
+			   <div>
+					<select id="gpio-list">
+						<option value="-1">-- Choose a GPIO line --</option>
+					</select>
+				</div>
+			</p>
+			<p>&nbsp;</p>
+			<p style="width: 400px; display: none;" id="gpio-direction-p">
+				Select the direction of this GPIO line:
+				<div id="gpio-direction-div" style="display: none;">
+					<select id="direction-list">
+						<option value="-1">Not reserved</option>
+						<option value="0">Input</option>
+						<option value="1">Output</option>
+					</select>
+				</div>
+			</p>
+			<p>&nbsp;</p>
+			<p style="width: 400px; display: none;" id="value-out-p" >
+				Select the value to output:
+				<div id="value-out-div" style="display: none;">
+					<select id="value-list">
+						<option value="-1">No output</option>
+						<option value="0">0</option>
+						<option value="1">1</option>
+					</select>
+				</div>
+			</p>
+			<p>&nbsp;</p>
+			<p style="width: 400px; display: none;" id="value-in-p">
+				Current value:&nbsp;<span id="current-value"></span>
+			</p>
+			<p>&nbsp;</p>
+			<p class="eris-color-error" id="gpio-error-p">
+			</p>
+		</div>
+		<br/>&nbsp;
+		<br/>
+		<div class="eris-button-box">
+			<button class="eris-main-button" id="back-bt" style="width: 22em;">
+				Back
+			</button>
+		</div>
+	</div>
+
+<script>
+
+	let current_gpio_reserved = -1;
+	
+	
+	
+	window.onload = function() { 
+		fetch_gpio_list();
+	};
+	
+	
+	
+	document.getElementById('back-bt').addEventListener('click', function(e)
+	{
+		window.location.href = "/index.html";
+	});
+	
+	
+	
+	async function fetch_gpio_list()
+	{
+		const response = await fetch("/api/gpio/list", {
+			method: "GET"
+		});
+		if (response.ok) {
+			response_text = await response.text();
+			const response_array = response_text.split(' ');
+			response_array.forEach(gpio => {
+				const opt = document.createElement('option');
+				opt.value = gpio;
+				opt.textContent = gpio;
+				document.getElementById('gpio-list').appendChild(opt);
+			});
+		}
+	}
+	
+	
+
+	let current_gpio_name = null;
+
+
+
+	document.getElementById('gpio-list').addEventListener('change', async function(e)
+	{
+		if ((current_gpio_name != null) && (current_gpio_reserved != -1)) {
+			await release_gpio(current_gpio_name);
+			current_gpio_name = null;
+		}
+		
+		current_gpio_reserved = -1;
+		document.getElementById('direction-list').value = "-1";
+		document.getElementById('value-out-p').style = "display: none;";
+		document.getElementById('value-out-div').style = "display: none;";
+		document.getElementById('value-in-p').style = "display: none;";
+		erase_error();
+		
+		if (document.getElementById('gpio-list').value === "-1") {
+			// No GPIO selected
+			current_gpio_name = null;
+			document.getElementById('gpio-direction-p').style.display = "none";
+			document.getElementById('gpio-direction-div').style.display = "none";
+		} else {
+			current_gpio_name = document.getElementById('gpio-list').value;
+			document.getElementById('gpio-direction-p').style.display = "flex";
+			document.getElementById('gpio-direction-div').style.display = "flex";
+		}
+	});
+
+
+
+	document.getElementById('direction-list').addEventListener('change', async function(e)
+	{
+		erase_error();
+
+		document.getElementById('value-list').value = -1;
+		
+		if (document.getElementById('direction-list').value === "-1") {
+			// Not reserved
+			await release_gpio(current_gpio_name);
+			document.getElementById('value-out-p').style = "display: none;";
+			document.getElementById('value-out-div').style = "display: none;";
+			document.getElementById('value-in-p').style = "display: none;";
+			return;
+		}
+
+		if (current_gpio_reserved != -1)
+			await release_gpio(current_gpio_name);
+		
+		if (document.getElementById('direction-list').value === "0") {
+			// Input
+			document.getElementById('value-out-p').style = "display: none;";
+			document.getElementById('value-out-div').style = "display: none;";
+
+			if (await reserve_current_gpio("in", 0) == 0) {
+				document.getElementById('value-in-p').style = "display: flex;";
+				read_gpio_value();
+				return;
+			}
+			document.getElementById('direction-list').value = "-1";
+		}
+		
+		// Output
+		document.getElementById('value-out-p').style = "display: flex;";
+		document.getElementById('value-out-div').style = "display: flex;";
+		document.getElementById('value-in-p').style = "display: none;";
+	});
+
+
+
+	document.getElementById('value-list').addEventListener('change', async function(e)
+	{
+		if (document.getElementById('value-list').value === "-1") {
+			// No value selected
+			if (current_gpio_reserved != -1)
+				release_gpio(current_gpio_name);
+			current_gpio_reserved = -1;
+			return;
+		}
+		if (current_gpio_reserved != 1) {
+			const ret = await reserve_current_gpio("out", document.getElementById('value-list').value);
+			if (ret != 0)
+				document.getElementById('value-list').value = "-1";
+			return;
+		}
+		write_gpio_value(document.getElementById('value-list').value);
+	});
+
+
+
+	function display_error(message)
+	{
+			document.getElementById("gpio-error-p").innerHTML = message;
+			document.getElementById("gpio-error-p").style = "display: flex";
+	}
+
+
+
+	function erase_error()
+	{
+			document.getElementById("gpio-error-p").style = "display: none";
+	}
+
+
+
+	async function reserve_current_gpio(direction, value)
+	{
+		if ((direction != "in") && (direction != "out")) {
+			document.getElementById("gpio-error-p").innerHTML = "Invalid direction in 'reserve_current_gpio()'.";
+			document.getElementById("gpio-error-p").style = "display: flex";
+			return -1;
+		}
+		if (direction == "out") {
+			if ((value != "0") && (value != "1")) {
+				document.getElementById("gpio-error-p").innerHTML = "Invalid value in 'reserve_current_gpio()'.";
+				document.getElementById("gpio-error-p").style = "display: flex";
+				return -1;
+			}
+		} else {
+			value = 0;
+		}
+		const response = await fetch("/api/gpio?name=" + document.getElementById('gpio-list').value + "&direction=" + direction + "&value=" + value, {
+			method: "GET"
+		});
+		if (! response.ok) {
+			const message = await response.text();
+			console.log(message);
+			display_error(message);
+			return -1;
+		}
+		if (direction == "out")
+			current_gpio_reserved = 1;
+		else {
+			current_gpio_reserved = 0;
+			read_gpio_value();
+		}
+		document.getElementById("gpio-error-p").style = "display: none";
+		return 0;
+	}
+
+
+
+	async function release_gpio(name)
+	{
+		if (name == "")
+			return;
+		const response = await fetch("/api/gpio?name=" + name, {
+			method: "DELETE"
+		});
+		if (response.ok)
+			current_gpio_reserved = -1;
+	}
+
+
+
+	var display_timer = null;
+
+	async function read_gpio_value()
+	{
+		if (display_timer != null) {
+				clearInterval(display_timer);
+				display_timer = null;
+		}
+
+		if (current_gpio_reserved == 0) {
+			const response = await fetch("/api/gpio/value?name=" + document.getElementById('gpio-list').value, {
+				method: "GET"
+			});
+			if (response.ok)
+				document.getElementById('current-value').innerHTML = await response.text();
+			else
+				display_error(await response.text());
+		}
+
+		display_timer = setInterval(read_gpio_value, 250);
+	}	
+
+
+
+	async function write_gpio_value(value)
+	{
+		if ((document.getElementById('gpio-list').value != "")
+		 && (current_gpio_reserved == 1)) {
+			const response = await fetch("/api/gpio/value?name=" + document.getElementById('gpio-list').value + "&value=" + value, {
+				method: "PUT"
+			});
+			if (!response.ok)
+				display_error(await response.text());
+		}
+	}	
+
+	
+	
+	window.onbeforeunload = function()
+	{
+		if (display_timer != null) {
+			clearInterval(display_timer);
+			display_timer = null;
+		}
+
+		if ((current_gpio_name != null) && (current_gpio_reserved != -1))
+			release_gpio(current_gpio_name);
+		current_gpio_name = null;
+	};
+		
+
+
+</script>
+</body>
+</html>
