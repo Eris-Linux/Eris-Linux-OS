@@ -1,0 +1,61 @@
+
+
+QLabel#TitleLabel {
+	background-color: #124657;
+	color: white;
+	font-size: 40px;
+	padding: 20px;
+	border-radius: 10px;
+	height: 80px;
+}
+
+
+QLabel#PromptLabel {
+	background-color: #ecf0f1;
+	font-size: 32px;
+	padding: 20px;
+	height: 64px;
+}
+
+
+QPushButton {
+	background-color: #49a3b6;
+	color: #124657;
+	font-size: 32px;
+	font-weight: bold;
+	padding: 20px;
+	border-radius: 15px;
+}
+
+
+QPushButton:pressed {
+	background-color: #2d636f;
+	color: #49a3b6;
+}
+
+
+QPushButton#OkButton {
+	background-color: #26943c;
+	color: #ecf0f1;
+}
+
+
+QPushButton#CancelButton {
+	background-color: #b73131;
+	color: #ecf0f1;
+}
+
+
+#VirtualKeyboardFrame {
+	background-color: #ecf0f1c;
+	border: 2px solid #124657;
+}
+
+
+QLineEdit {
+	font-size: 28px;
+	background: #ecf0f1;
+	padding: 8px;
+	border: 2px solid #bdc3c7;
+	border-radius: 8px;
+}
