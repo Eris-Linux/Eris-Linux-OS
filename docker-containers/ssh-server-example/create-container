@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# Script create a Docker container for a NginX HTTP server.
+#
+# Christophe BLAESS 2025-2026.
+#
+
+
+if [ $# -ne 1 ]
+then
+	echo "Usage: $0 <architecture>" >&2
+	exit 1
+fi
+
+architecture="${1}"
+
+if [ "${architecture}" != "arm" ] && [ "${architecture}" != "arm64" ]
+then
+	echo "<architecture> must be 'arm' or 'arm64'." >&2
+	exit 1
+fi
+
+docker container rm -f "eris-linux-container"  2>/dev/null
+docker image     rm -f "eris-linux-image"      2>/dev/null
+rm -f eris-linux-container.tar eris-linux-container.sha256 eris-linux-container.cmd eris-linux-container+sum.tar.bz2
+
+docker buildx build --platform linux/${architecture} --no-cache --debug --rm -t "eris-linux-image" --output type=tar,dest=eris-linux-container.tar . || exit 1
+
+command_line=$(sed -ne 's/^.*CMD[[:blank:]]*\[\(.*\)\]$/\1/p' Dockerfile | sed -e 's/"\([^"]*\)",\?[[:blank:]]*/\1 /g')
+
+echo "${command_line}" > eris-linux-container.cmd
+sha256sum eris-linux-container.tar eris-linux-container.cmd > eris-linux-container.sha256
+tar -cjf eris-linux-container+sum.tar.bz2  eris-linux-container.tar eris-linux-container.cmd eris-linux-container.sha256
+
+mv "eris-linux-container+sum.tar.bz2" "ssh-server.tar.bz2"
+
+rm -f eris-linux-container.tar eris-linux-container.sha256 eris-linux-container.cmd eris-linux-container+sum.tar.bz2
