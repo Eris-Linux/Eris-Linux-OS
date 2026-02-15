@@ -1,0 +1,3 @@
+#!/bin/sh
+swagger-cli validate eris-linux-api.yaml || exit 1
+npx redoc-cli bundle eris-linux-api.yaml -o eris-linux-api.html

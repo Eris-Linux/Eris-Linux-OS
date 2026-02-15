@@ -1,0 +1,205 @@
+ntp:
+  get:
+    summary: Get the status of the NTP usage.
+    tags: [ Time ]
+    responses:
+      '200':
+        description: Whether the NTP protocol is in use (`yes` or `no`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the status of the NTP usage.
+    tags: [ Time ]
+    parameters:
+      - name: status
+        in: query
+        required: true
+        description: Whether to use or not NTP protocol (`yes` or `no`).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `status` parameter (must be `yes` or `no`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+ntp-server:
+  get:
+    summary: Get the name or IP address of the NTP server.
+    tags: [ Time ]
+    responses:
+      '200':
+        description: Host name or IP address of the NTP server.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+           schema:
+              type: string
+  put:
+    summary: Set the name or IP address of the NTP server.
+    tags: [ Time ]
+    parameters:
+      - name: server
+        in: query
+        required: true
+        description: IP address or hostname of the NTP server.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `server` address parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+zone:
+  get:
+    summary: Get the local time zone of the device.
+    tags: [ Time ]
+    responses:
+      '200':
+        description: Name of the local time zone.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the local time zone of the device.
+    tags: [ Time ]
+    parameters:
+      - name: zone
+        in: query
+        required: true
+        description: Name of the time zone, must be one returned by GET `/api/time/zone/list`
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid time `zone` name parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+zone-list:
+  get:
+    summary: Get a list of time zone names.
+    tags: [ Time ]
+    responses:
+      '200':
+        description: Space-separated list of all time zones known by Eris Linux.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+           schema:
+              type: string
+
+local:
+  get:
+    summary: Get the local time (using local time zone).
+    tags: [ Time ]
+    responses:
+      '200':
+        description: Local time in format `YYYY-MM-DD hh:mm:ss:uuuuuu`
+        content:
+          text/plain:
+            schema:
+              type: string
+
+system:
+  get:
+    summary: Get the system UTC time (regardless of local time zone).
+    tags: [ Time ]
+    responses:
+      '200':
+        description: System UTC time in format `YYYY-MM-DD hh:mm:ss:uuuuuu`
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the system UTC time.
+    tags: [ Time ]
+    parameters:
+      - name: time
+        in: query
+        required: true
+        description: System time in format `YYYY/MM/DDThh:mm:ss` or `YYYY:MM:DD:hh:mm:ss`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Invalid format for `time` parameter.
+        content:
+          text/plain:
+            schema:
+              type: string

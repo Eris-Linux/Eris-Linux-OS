@@ -1,0 +1,124 @@
+watchdog:
+  post:
+    summary: Feed the watchdog.
+    tags: [ Watchdog ]
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: No watchdog available.
+        content:
+          text/plain:
+            schema:
+              type: string
+  delete:
+    summary: Disable the watchdog.
+    tags: [ Watchdog ]
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: No watchdog available.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+delay:
+  get:
+    summary: Get the current delay of the watchdog.
+    tags: [ Watchdog ]
+    responses:
+      '200':
+        description: Delay in seconds of the watchdog.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: No watchdog available.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the delay of the watchdog.
+    tags: [ Watchdog ]
+    parameters:
+      - name: delay
+        in: query
+        required: true
+        description: Period in seconds (in [1-48]).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `period` argument (must be in [1-48]).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: No watchdog available.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+feeder:
+  get:
+    summary: Get the status of the watchdog feeder thread.
+    tags: [ Watchdog ]
+    responses:
+      '200':
+        description: Status of the feeder thread (`running` or `stopped`).
+        content:
+          text/plain:
+            schema:
+              type: string
+  post:
+    summary: Start the watchdog feeder thread.
+    tags: [ Watchdog ]
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Already running.
+        content:
+          text/plain:
+            schema:
+              type: string
+  delete:
+    summary: Stop the watchdog feeder thread.
+    tags: [ Watchdog ]
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Already stopped.
+        content:
+          text/plain:
+            schema:
+              type: string

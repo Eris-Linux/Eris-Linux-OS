@@ -1,0 +1,364 @@
+dns:
+  get:
+    summary: Get the current Domain Name Server address.
+    tags: [ Network ]
+    responses:
+      '200':
+        description: IP address of the DNS, empty string if none configured.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error concerning resolv.conf.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the address of the Domain Name Server.
+    tags: [ Network ]
+    parameters:
+      - name: address
+        in: query
+        required: true
+        description: IP address or host name of the DNS.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid IP address.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+interface-config:
+  get:
+    summary: Get the current configuration of a network interface.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: String formatted as follows `{"atboot", "ondemand"} {"dhcp", "static"} [ {"ipv4", "ipv6"} <address> <netmask> <gateway>]`.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing interface name.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown interface.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the configuration of a network interface.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+      - name: activate
+        in: query
+        required: true
+        description: When the interface must be activated (`atboot` or `ondemand`).
+        schema:
+          type: string
+      - name: mode
+        in: query
+        required: true
+        description: Mode to obtain IP address (`static` or `dhcp`).
+        schema:
+          type: string
+      - name: ip
+        in: query
+        required: false
+        description: Type of IP address (`ipv4` or `ipv6`). Required if `mode` is `static`.
+        schema:
+          type: string
+      - name: address
+        in: query
+        required: true
+        description: IP address of the interface. Required if `mode` is `static`.
+        schema:
+          type: string
+      - name: netmask
+        in: query
+        required: true
+        description: IP mask of the sub-network of the interface. Required if `mode` is `static`.
+        schema:
+          type: string
+      - name: gateway
+        in: query
+        required: true
+        description: IP address of the gateway to reach Internet. Required if `mode` is `static`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: One of the parameters is missing or invalid.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Interface not found.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+interface-list:
+  get:
+    summary: Get the list of the network interfaces.
+    tags: [ Network ]
+    responses:
+      '200':
+        description: Space-separated list of network interfaces available.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: No network interface available.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+interface-status:
+  get:
+    summary: Get the current status of a network interface.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Status of the interface formatted as follows `{"up", "down"} [ <address> <netmask> <gateway> ]`
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing interface `name` parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown interface.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error obtaining interface parameters.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the status of a network interface.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: true
+        description: Activation status of the interface (`up` or `down`).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid interface `name` or `status` parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+interface-wireless:
+  get:
+    summary: Is this network interface wireless?.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Wireless interface (`yes` or `no`)
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid interface `name` parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unkown interface.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+wifi:
+  get:
+    summary: Scan the available Wifi SSID.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Space-separated list of SSID of detected Wifi access-points. 
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid interface `name` parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: No wifi access point detected.
+        content:
+          text/plain:
+            schema:
+              type: string
+  post:
+    summary: Connect to a wifi access point.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+      - name: ssid
+        in: query
+        required: true
+        description: SSID of the Wifi access point to connect to.
+        schema:
+          type: string
+      - name: pass
+        in: query
+        required: true
+        description: Password of the Wifi access point to connect to.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid interface `name`, Wifi `ssid` or `pass` parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '504':
+        description: Internal error concerning wpa-supplicant (may be a connection refused error).
+        content:
+          text/plain:
+            schema:
+              type: string
+  delete:
+    summary: Disconnect from wifi access point.
+    tags: [ Network ]
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+
+wifi-quality:
+  get:
+    summary: Get statistics about wifi connection quality.
+    tags: [ Network ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the interface, as returned in the list provided by `GET /api/network/interface/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Wifi quality as follows `link=<percent> level=<percent> noise=<percent>`
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid interface `name` parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error concerning wireless file.
+        content:
+          text/plain:
+            schema:
+              type: string

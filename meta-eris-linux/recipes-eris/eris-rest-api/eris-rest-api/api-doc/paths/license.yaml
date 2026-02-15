@@ -1,0 +1,42 @@
+list:
+  get:
+    summary: Get a space-separated list of all licenses.
+    tags: [ Licenses ]
+    responses:
+      '200':
+        description: List of licenses used by packages installed in Eris Linux system (but not in the containers).
+        content:
+          text/plain:
+            schema:
+              type: string
+text:
+  get:
+    summary: Get the full text of a license.
+    tags:  [ Licenses ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the license as returned in the list provided by `GET /api/license/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Full text of the given license.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing license `name` argument.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown license.
+        content:
+          text/plain:
+            schema:
+              type: string
+

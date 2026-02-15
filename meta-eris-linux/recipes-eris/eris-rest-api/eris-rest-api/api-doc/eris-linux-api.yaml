@@ -1,0 +1,125 @@
+openapi: 3.1.0
+info:
+  title: Eris Linux API
+  version: 1.0.0
+  description: |
+    REST API for managing system services and configuration
+    on Eris Linux embedded devices.
+  contact:
+    name: Eris Linux Team
+    email: contact@eris-linux.net
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:8080/api
+    description: API is reachable by custom code running in containers embedded in Eris Linux system.
+    variables:
+      host:
+        default: localhost
+      port:
+        default: "8080"
+externalDocs:
+  description: Eris Linux system documentation.
+  url: https://www.eris-linux.net/documentation.html
+tags:
+  - name: Containers
+    description: Docker container related operations.
+  - name: Packages
+    description: Packages installed in Eris Linux system (not in containers).
+  - name: Licenses
+    description: Open Source licenses present on Eris Linux system.
+  - name: Network
+    description: Network interfaces status and setup.
+  - name: System
+    description: System related information.
+  - name: Time
+    description: Time, NTP and time zone related methods.
+  - name: Update
+    description: Update system and device manager communication.
+  - name: Watchdog
+    description: Watchdog related operations.
+paths:
+  /api/container/presence:
+    $ref: './paths/container.yaml#/presence'
+  /api/container/name:
+    $ref: './paths/container.yaml#/name'
+  /api/container/status:
+    $ref: './paths/container.yaml#/status'
+  /api/container/version:
+    $ref: './paths/container.yaml#/version'
+
+  /api/license/list:
+    $ref: './paths/license.yaml#/list'
+  /api/license/text:
+    $ref: './paths/license.yaml#/text'
+
+  /api/package/list:
+    $ref: './paths/package.yaml#/list'
+  /api/package/version:
+    $ref: './paths/package.yaml#/version'
+  /api/package/licenses:
+    $ref: './paths/package.yaml#/licenses'
+
+  /api/network/interface/list:
+    $ref: './paths/network.yaml#/interface-list'
+  /api/network/interface/status:
+    $ref: './paths/network.yaml#/interface-status'
+  /api/network/interface/config:
+    $ref: './paths/network.yaml#/interface-config'
+  /api/network/interface/wireless:
+    $ref: './paths/network.yaml#/interface-wireless'
+  /api/network/dns:
+    $ref: './paths/network.yaml#/dns'
+  /api/network/wifi:
+    $ref: './paths/network.yaml#/wifi'
+  /api/network/wifi/quality:
+    $ref: './paths/network.yaml#/wifi-quality'
+
+  /api/system/model:
+    $ref: './paths/system.yaml#/model'
+  /api/system/type:
+    $ref: './paths/system.yaml#/type'
+  /api/system/uuoid:
+    $ref: './paths/system.yaml#/uuid'
+  /api/system/version:
+    $ref: './paths/system.yaml#/version'
+
+  /api/time/ntp:
+    $ref: './paths/time.yaml#/ntp'
+  /api/time/ntp/server:
+    $ref: './paths/time.yaml#/ntp-server'
+  /api/time/zone:
+    $ref: './paths/time.yaml#/zone'
+  /api/time/zone/list:
+    $ref: './paths/time.yaml#/zone-list'
+  /api/time/local:
+    $ref: './paths/time.yaml#/local'
+  /api/time/system:
+    $ref: './paths/time.yaml#/system'
+
+  /api/update/contact/now:
+    $ref: './paths/update.yaml#/contact-now'
+  /api/update/contact/period:
+    $ref: './paths/update.yaml#/contact-period'
+  /api/update/container/policy:
+    $ref: './paths/update.yaml#/container-policy'
+  /api/update/factory:
+    $ref: './paths/update.yaml#/factory'
+  /api/update/reboot/automatic:
+    $ref: './paths/update.yaml#/reboot-automatic'
+  /api/update/reboot/now:
+    $ref: './paths/update.yaml#/reboot-now'
+  /api/update/reboot/pending:
+    $ref: './paths/update.yaml#/reboot-pending'
+  /api/update/rollback:
+    $ref: './paths/update.yaml#/rollback'
+  /api/update/status:
+    $ref: './paths/update.yaml#/status'
+
+  /api/watchdog:
+    $ref: './paths/watchdog.yaml#/watchdog'
+  /api/watchdog/delay:
+    $ref: './paths/watchdog.yaml#/delay'
+  /api/watchdog/feeder:
+    $ref: './paths/watchdog.yaml#/feeder'

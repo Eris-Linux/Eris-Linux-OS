@@ -1,0 +1,230 @@
+contact-period:
+  get:
+    summary: Get period between contacts to the Eris Linux server.
+    tags: [ Update ]
+    responses:
+      '200':
+        description: The period in seconds between two contacts with Eris Linux server.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set period in seconds between contacts to the Eris Linux server.
+    tags: [ Update ]
+    parameters:
+      - name: period
+        in: query
+        required: true
+        description: Period in seconds (in [0-86400]), `0` = no automatic contact.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid period (must be in [0-86400]).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal Error
+        content:
+          text/plain:
+            schema:
+              type: string
+
+contact-now:
+  post:
+    summary: Ask the device to contact the server immediatly.
+    tags: [ Update ]
+    responses:
+      '200':
+        description: Ok.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error when trying to contact the server.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+container-policy:
+  get:
+    summary: Get the policy for container update.
+    tags: [ Update ]
+    responses:
+      '200':
+        description: Policy for container update (`immediate` or `atreboot`).
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the policy for container update.
+    tags: [ Update ]
+    parameters:
+      - name: policy
+        in: query
+        required: true
+        description: Policy for the container update (`immediate` or `atreboot`).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid policy parameter (must be `immediate` or `atreboot`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error when trying to save the policy.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+factory:
+  post:
+    summary: Return the device to factory preset.
+    tags: [ Update ]
+    responses:
+      '501':
+        description: Not implemented yet.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+reboot-automatic:
+  get:
+    summary: Should the system reboot automatically after an update?
+    tags: [ Update ]
+    responses:
+      '200':
+        description: Whether (`yes` or `no`) the system reboots automatically after a Eris Linux update.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Indicates if the system must reboot automatically after update.
+    tags: [ Update ]
+    parameters:
+      - name: auto
+        in: query
+        required: true
+        description: Automatic reboot after a system update (`yes` or `no`).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `auto` parameter (must be `yes` or `no`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal Error
+        content:
+          text/plain:
+            schema:
+              type: string
+
+reboot-now:
+  post:
+    summary: Fore a system reboot as soon as possible.
+    tags: [ Update ]
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error when trying to reboot the system.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+reboot-pending:
+  get:
+    summary: Is there a system reboot pending?
+    tags: [ Update ]
+    responses:
+      '200':
+        description: Return `yes` if a pending reboot is programmed, `no` otherwise.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Program or remove a pending reboot.
+    tags: [ Update ]
+    parameters:
+      - name: reboot
+        in: query
+        required: true
+        description: Program (`yes`) a system reboot or cancel (`no`) any pending reboot.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `reboot` parameter (must be `yes` or `no`).
+        content:
+          text/plain:
+            schema:
+              type: string
+
+rollback:
+  post:
+    summary: Force system update rollback to previous version.
+    tags: [ Update ]
+    responses:
+      '501':
+        description: Not implemented.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+status:
+  get:
+    summary: Get the update system status.
+    tags: [ Update ]
+    responses:
+      '200':
+        description: One of `1 System Ok`, `2 System update install in progress.`, `3 System update install Ok.`, `4 System update install failed.`, `5 System reboot in progress.` 
+        content:
+          text/plain:
+            schema:
+              type: string
+

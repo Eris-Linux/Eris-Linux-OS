@@ -1,0 +1,8 @@
+[Unit]
+Description=Eris Linux REST API
+
+[Service]
+ExecStart=/usr/sbin/eris-rest-api
+
+[Install]
+WantedBy=multi-user.target

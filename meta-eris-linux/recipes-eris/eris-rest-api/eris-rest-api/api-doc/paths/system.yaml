@@ -1,0 +1,77 @@
+model:
+  get:
+    summary: Get the model of the board.
+    tags: [ System ]
+    responses:
+      '200':
+        description: Model of the board (for example `Raspberry-Pi-4`)
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error looking for system model.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+type:
+  get:
+    summary: Get the type of the system image.
+    tags: [ System ]
+    responses:
+      '200':
+        description: Type (`Graphical` or `Headless`) of the system image.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error looking for system type.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+uuid:
+  get:
+    summary: Get the UUID of the device.
+    tags: [ System ]
+    responses:
+      '200':
+        description: Universally Unique Identifier of the device (128-bits formatted as `27d8494b-8c15-4984-828a-92ef8295f979`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: No system UUID defined yet.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing system UUID.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+version:
+  get:
+    summary: Get the version the system.
+    tags: [ System ]
+    responses:
+      '200':
+        description: System version number (formatted as `1.2.3`)
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing system version.
+        content:
+          text/plain:
+            schema:
+              type: string

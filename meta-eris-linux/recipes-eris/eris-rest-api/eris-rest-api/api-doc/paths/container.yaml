@@ -1,0 +1,123 @@
+name:
+  get:
+    summary: Get the name of the container installed in a slot.
+    tags: [ Containers ]
+    parameters:
+      - name: index
+        in: query
+        required: true
+        description: Index of the slot (in [0-3]).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Name of the container installed in the given slot, empty string if none.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid slot `index` parameter (must be in [0-3]).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error in container configuration.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+presence:
+  get:
+    summary: Get the presence of a container in a slot.
+    tags: [ Containers ]
+    parameters:
+      - name: index
+        in: query
+        required: true
+        description: Index of the slot (in [0-3]).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: State (`absent` or `present`) of a container in the slot.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid slot `index` parameter (must be in [0-3]).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error in container configuration.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+status:
+  get:
+    summary: Get the status of a container in a slot.
+    tags: [ Containers ]
+    parameters:
+      - name: index
+        in: query
+        required: true
+        description: Index of the slot ([0-3]).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Status (`running` or `stopped`) of the container in the slot.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid slot `index` parameter (must be in [0-3]).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error in communication with docker.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+version:
+  get:
+    summary: Get the version of the container installed in a slot.
+    tags: [ Containers ]
+    parameters:
+      - name: index
+        in: query
+        required: true
+        description: Index of the slot (in [0-3]).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Version of the container installed in the given slot, empty string if none.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid slot `index` parameter (must be in [0-3]).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error in container configuration.
+        content:
+          text/plain:
+            schema:
+              type: string

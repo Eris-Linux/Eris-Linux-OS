@@ -1,0 +1,77 @@
+list:
+  get:
+    summary: Get a list of packages embedded in Eris Linux system.
+    tags: [ Packages ]
+    responses:
+      '200':
+        description: Space-separated list of all packages embedded in Eris Linux system (not including the containers).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: No package found.
+        content:
+          text/plain:
+            schema:
+              type: string
+version:
+  get:
+    summary: Get the version number of a package installed on the Eris Linux system.
+    tags: [ Packages ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the package, as returned in the list provided by `GET /api/package/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Version of the package.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing package `name` argument.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Package not found.
+        content:
+          text/plain:
+            schema:
+              type: string
+licenses:
+  get:
+    summary: Get the list of licenses concerning a package and their logical relationships.
+    tags: [ Packages ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the package, as returned in the list provided by `GET /api/package/list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: List of licenses concerning the package with logical operator describing their relationships.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing package `name` argument.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Package not found.
+        content:
+          text/plain:
+            schema:
+              type: string

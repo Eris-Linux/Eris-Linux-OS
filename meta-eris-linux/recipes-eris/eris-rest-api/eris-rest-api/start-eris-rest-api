@@ -1,0 +1,11 @@
+#! /bin/sh
+
+case "$1" in
+	start)
+		/usr/sbin/eris-rest-api & ;;
+	stop)   killall eris-rest-api ;;
+	restart) killall eris-rest-api ; /usr/sbin/eris-rest-api & ;;
+	*) echo "usage: $0 {start | stop | restart}" >&2; exit 1 ;;
+esac
+
+exit 0
