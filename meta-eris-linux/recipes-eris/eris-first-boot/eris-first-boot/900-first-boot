@@ -1,0 +1,7 @@
+#!/bin/sh
+
+printf "First boot tasks..."
+
+rm -f /etc/early-init.d/900-first-boot
+
+printf "Ok\n"
