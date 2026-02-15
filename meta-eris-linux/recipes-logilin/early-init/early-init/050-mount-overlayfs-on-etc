@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# SPDX-License-Identifier: MIT
+#
+# Script to mount an overlayfs over `/etc/`.
+# The `/` partition is supposed to be mounted read-only.
+# The `/data` partition is mounted in read-write mode (see script 020).
+#
+WORKDIR=/data/overlayfs/etc/workdir
+UPPERDIR=/data/overlayfs/etc/upperdir
+
+if [ ! -d "${WORKDIR}" ] || [ ! -d "${UPPERDIR}" ]
+then
+	mkdir -p "${WORKDIR}"  "${UPPERDIR}"
+fi
+
+mount none /etc -t overlay -o lowerdir=/etc,workdir="${WORKDIR}",upperdir="${UPPERDIR}"
+
+# Force /etc/eris-linux/network to be on the overlay.
+# This is needed on the first boot to save the network parameters written by `prepare-image`.
+#
+touch /etc/eris-linux/network
+
+# Copy `organization-id` written by `prepare-image` on the overlay.
+if [ -f /usr/share/eris-linux/organization-id ]; then cp /usr/share/eris-linux/organization-id /etc/eris-linux; fi
