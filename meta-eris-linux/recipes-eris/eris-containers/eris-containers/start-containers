@@ -2,7 +2,7 @@
 
 
 CONTAINERS_FILE="/etc/eris-linux/containers"
-SLOTS_DIR="/usr/share/eris-linux/containers"
+SLOTS_DIR="/data/containers"
 CONTAINERS_STORAGE="/data/container-storage"
 
 MIN_SLOT_NUMBER=1

@@ -1,9 +1,0 @@
-#! /bin/sh
-#
-# SPDX-License-Identifier: MIT
-#
-
-mkdir -p /data/containers
-
-mount --bind  /data/containers /usr/share/eris-linux/containers
-
