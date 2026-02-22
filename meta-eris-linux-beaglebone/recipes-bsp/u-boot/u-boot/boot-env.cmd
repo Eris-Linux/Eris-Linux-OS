@@ -58,5 +58,5 @@ setenv fdt_addr 0x88000000
 load mmc ${bootdev}:${current_boot} ${fdt_addr}  /boot/am335x-boneblack.dtb
 fdt addr ${fdt_addr}
 
-setenv bootargs "root=/dev/mmcblk${bootdev}p${current_boot} console=ttyS0,115200 rootwait ro init=/sbin/early-init"
+setenv bootargs "root=/dev/mmcblk${bootdev}p${current_boot} console=ttyS0,115200 rootwait ro init=/sbin/early-init quiet"
 bootz ${kernel_addr_r} - ${fdt_addr}
