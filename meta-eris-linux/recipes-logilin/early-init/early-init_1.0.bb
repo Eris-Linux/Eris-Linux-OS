@@ -17,6 +17,7 @@ SRCREV = "5cd1e1df4f5b5614ae69895503840d29a60a0067"
 S = "${WORKDIR}/git"
 
 SRC_URI += "file://010-partitionning-at-first-boot"
+SRC_URI += "file://015-mount-tmp"
 SRC_URI += "file://020-mount-tmpfs-home"
 SRC_URI += "file://030-mount-data-partition"
 SRC_URI += "file://040-bind-mount-containers-directory"
@@ -28,6 +29,7 @@ do_install () {
 	install -d ${D}/${sysconfdir}/early-init.d
 
 	install -m 0755 ${WORKDIR}/010-partitionning-at-first-boot      ${D}${sysconfdir}/early-init.d 
+	install -m 0755 ${WORKDIR}/015-mount-tmp                        ${D}${sysconfdir}/early-init.d 
 	install -m 0755 ${WORKDIR}/020-mount-tmpfs-home                 ${D}${sysconfdir}/early-init.d 
 	install -m 0755 ${WORKDIR}/030-mount-data-partition             ${D}${sysconfdir}/early-init.d
 	install -m 0755 ${WORKDIR}/040-bind-mount-containers-directory  ${D}${sysconfdir}/early-init.d

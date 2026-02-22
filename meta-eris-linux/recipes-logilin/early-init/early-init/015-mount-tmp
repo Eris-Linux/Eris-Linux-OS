@@ -1,0 +1,8 @@
+#! /bin/sh
+#
+# SPDX-License-Identifier: MIT
+#
+
+mount none /var -t tmpfs
+mkdir /var/tmp
+mount none /run -t tmpfs

@@ -10,20 +10,32 @@ source /usr/share/eris-linux/partitions
 
 PARTITION="${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}"
 MOUNTPOINT=/data
-FILESYSTEM=ext4
+FILESYSTEM=f2fs
 NAME=data
+DM_NAME="Data"
+DM_BLOCK="/dev/mapper/${DM_NAME}"
 
 printf "Preparing ${NAME} partition..." >&2
 
-if mount ${PARTITION} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
+serial_number=$(cat /proc/cpuinfo | sed -ne 's/^Serial.*: //p')
+printf "${serial_number}" | sha256sum | sed -e 's/ .*//' > /tmp/key.bin
+
+if ! cryptsetup luksOpen --key-file /tmp/key.bin ${PARTITION} ${DM_NAME}
+then
+	exit 1
+fi
+
+rm -f /tmp/key.bin
+
+if mount ${DM_BLOCK} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
 then
 	mkdir -p "${MOUNTPOINT}/containers"
 	exit 0
 fi
 
-if fsck.${FILESYSTEM}  -p  ${PARTITION} >/dev/null 2>&1
+if fsck.${FILESYSTEM}  -p ${DM_BLOCK} >/dev/null 2>&1
 then
-	if mount ${PARTITION} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
+	if mount ${DM_BLOCK} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
 	then
 		mkdir -p "${MOUNTPOINT}/containers"
 		exit 0
@@ -32,13 +44,16 @@ fi
 
 if [ "${FILESYSTEM}" = "vfat" ]
 then
-	mkfs.vfat -c -n DATA ${PARTITION} >/dev/null 2>&1
+	mkfs.vfat -c -n DATA ${DM_BLOCK} >/dev/null 2>&1
+elif [ "${FILESYSTEM}" = "f2fs" ]
+then
+	mkfs.f2fs -l DATA ${DM_BLOCK} >/dev/null 2>&1
 else
-	mkfs.${FILESYSTEM} -c -L DATA -q ${PARTITION} >/dev/null 2>&1
+	mkfs.${FILESYSTEM} -c -L DATA -q ${DM_BLOCK} >/dev/null 2>&1
 fi
 
 
-if mount ${PARTITION} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
+if mount ${DM_BLOCK} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
 then
 	mkdir -p "${MOUNTPOINT}/containers"
 	exit 0
