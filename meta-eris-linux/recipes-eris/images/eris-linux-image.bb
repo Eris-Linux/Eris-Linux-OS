@@ -43,8 +43,9 @@ IMAGE_FEATURES += "read-only-rootfs"
 #
 IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'no-update',  '', ' u-boot  u-boot-fw-utils kernel-devicetree', d)}"
 IMAGE_INSTALL:append = " kernel-image kernel-modules"
-IMAGE_INSTALL:append = " e2fsprogs"
+IMAGE_INSTALL:append = " e2fsprogs f2fs-tools"
 IMAGE_INSTALL:append = " fast-reboot"
+IMAGE_INSTALL:append = " cryptsetup"
 
 # Standard command line tools
 #
