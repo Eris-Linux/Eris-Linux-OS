@@ -29,8 +29,9 @@ do_install() {
 	echo "# Feel free to modify parameters below to configure Eris behavior."  >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "# But you could better use the Eris API or device manager."          >> ${D}${sysconfdir}/eris-linux/parameters
 	echo ""                                                                    >> ${D}${sysconfdir}/eris-linux/parameters
-	echo "automatic_reboot_after_update=n"                                     >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "status_upload_period_seconds=300"                                    >> ${D}${sysconfdir}/eris-linux/parameters
+	echo "automatic_system_update=y"                                           >> ${D}${sysconfdir}/eris-linux/parameters
+	echo "automatic_reboot_after_update=n"                                     >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "ntp_server=pool.ntp.org"                                             >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "ntp_enable=yes"                                                      >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "container_update_policy=immediate"                                   >> ${D}${sysconfdir}/eris-linux/parameters
