@@ -17,11 +17,16 @@ DM_BLOCK="/dev/mapper/${DM_NAME}"
 
 printf "Preparing ${NAME} partition..." >&2
 
-serial_number=$(cat /proc/cpuinfo | sed -ne 's/^Serial.*: //p')
-printf "${serial_number}" | sha256sum | sed -e 's/ .*//' > /tmp/key.bin
+if [ -x /usr/sbin/get-dmk ]
+then
+	/usr/sbin/get-dmk > /tmp/key.bin
+else
+	cat /proc/cpuinfo | sed -ne 's/^Serial.*: //p' > /tmp/key.bin
+fi
 
 if ! cryptsetup luksOpen --key-file /tmp/key.bin ${PARTITION} ${DM_NAME}
 then
+	rm -f /tmp/key.bin
 	exit 1
 fi
 

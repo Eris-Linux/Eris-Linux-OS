@@ -85,10 +85,14 @@ then
 	mount none /run -t tmpfs
 	mount none /var -t tmpfs
 	mkdir /var/tmp
-	serial_number=$(cat /proc/cpuinfo | sed -ne 's/^Serial.*: //p')
-	printf "${serial_number}" | sha256sum | sed -e 's/ .*//' > /tmp/key.bin
+	if [ -x /usr/sbin/get-dmk ]
+	then
+		/usr/sbin/get-dmk > /tmp/key.bin
+	else
+		cat /proc/cpuinfo | sed -ne 's/^Serial.*: //p' > /tmp/key.bin
+	fi
 
-	echo "Encrypting data partition."
+	echo "Preparing data partition for encryption."
 	dd if=/dev/zero of=${data_part} bs=1M count=4 >/dev/null 2>&1
 	/usr/sbin/cryptsetup luksFormat  \
 		--batch-mode             \
@@ -98,7 +102,6 @@ then
 		--hash sha256            \
 		--key-file /tmp/key.bin  \
 		${data_part}
-	echo "Encrypted"
 	rm -f /tmp/key.bin
 	umount /var
 	umount /run
