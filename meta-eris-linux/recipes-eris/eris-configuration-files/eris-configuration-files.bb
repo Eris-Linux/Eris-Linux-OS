@@ -10,7 +10,6 @@ do_install() {
 	# /usr/share/eris-linux/system-version
 
 	install -d ${D}${datadir}/eris-linux/
-	install -d ${D}${datadir}/eris-linux/containers
 	echo "${MACHINE}"              > ${D}${datadir}/eris-linux/machine
 	echo "${ERIS_SYSTEM_TYPE}"     > ${D}${datadir}/eris-linux/system-type
 	echo "${ERIS_SYSTEM_MODEL}"    > ${D}${datadir}/eris-linux/system-model
@@ -48,7 +47,6 @@ do_install() {
 	echo "ERIS_PARTITION_DATA=6"            >> ${D}${datadir}/eris-linux/partitions
 }
 
-FILES:${PN} += "${datadir}/eris-linux/containers"
 FILES:${PN} += "${datadir}/eris-linux/machine"
 FILES:${PN} += "${datadir}/eris-linux/partitions"
 FILES:${PN} += "${datadir}/eris-linux/system-type"
