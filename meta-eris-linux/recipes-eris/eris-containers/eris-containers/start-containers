@@ -25,7 +25,7 @@ start_container()
 	local options=""
 	local rest=""
 	local count=1
-	while IFS=! read id label version url graphical redirections privileged
+	while IFS=! read id label version filename b64 graphical redirections privileged
         do
 		if [ "${count}" = "${1}" ]; then break; fi
 		count=$((count + 1))
