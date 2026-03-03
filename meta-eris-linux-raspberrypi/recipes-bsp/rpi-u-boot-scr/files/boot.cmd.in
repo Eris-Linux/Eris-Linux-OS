@@ -54,6 +54,6 @@ load mmc 0:${current_boot} ${kernel_addr_r} boot/@@KERNEL_IMAGETYPE@@
 fdt addr ${fdt_addr}
 
 fdt get value bootargs /chosen bootargs
-setenv bootargs "${bootargs} root=/dev/mmcblk0p${current_boot}"
+setenv bootargs "${bootargs} root=/dev/mmcblk0p${current_boot} quiet"
 
 @@KERNEL_BOOTCMD@@ ${kernel_addr_r} - ${fdt_addr}
