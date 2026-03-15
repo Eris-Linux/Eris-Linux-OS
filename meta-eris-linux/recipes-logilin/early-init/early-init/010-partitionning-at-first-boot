@@ -82,27 +82,31 @@ then
 		w
 	EOF8
 
-	mount none /run -t tmpfs
-	mount none /var -t tmpfs
-	mkdir /var/tmp
-	if [ -x /usr/sbin/get-dmk ]
+	source /etc/eris-linux/encryption
+	if [ "${ERIS_DATA_CRYPT}" = "y" ]
 	then
-		/usr/sbin/get-dmk > /tmp/key.bin
-	else
-		cat /proc/cpuinfo | sed -ne 's/^Serial.*: //p' > /tmp/key.bin
-	fi
+		mount none /run -t tmpfs
+		mount none /var -t tmpfs
+		mkdir /var/tmp
+		if [ -x /usr/sbin/get-dmk ]
+		then
+			/usr/sbin/get-dmk > /tmp/key.bin
+		else
+			cat /proc/cpuinfo | sed -ne 's/^Serial.*: //p' > /tmp/key.bin
+		fi
 
-	echo "Preparing data partition for encryption."
-	dd if=/dev/zero of=${data_part} bs=1M count=4 >/dev/null 2>&1
-	/usr/sbin/cryptsetup luksFormat  \
-		--batch-mode             \
-		--type luks2             \
-		--cipher aes-xts-plain64 \
-		--key-size 512           \
-		--hash sha256            \
-		--key-file /tmp/key.bin  \
-		${data_part}
-	rm -f /tmp/key.bin
-	umount /var
-	umount /run
+		echo "Preparing data partition for encryption."
+		dd if=/dev/zero of=${data_part} bs=1M count=4 >/dev/null 2>&1
+		/usr/sbin/cryptsetup luksFormat  \
+			--batch-mode             \
+			--type luks2             \
+			--cipher aes-xts-plain64 \
+			--key-size 512           \
+			--hash sha256            \
+			--key-file /tmp/key.bin  \
+			${data_part}
+		rm -f /tmp/key.bin
+		umount /var
+		umount /run
+	fi
 fi
