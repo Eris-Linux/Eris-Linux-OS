@@ -7,7 +7,12 @@
 #
 
 source /usr/share/eris-linux/partitions
-source /etc/eris-linux/encryption
+if [ -f /etc/eris-linux/encryption ]
+then
+	source /etc/eris-linux/encryption
+else
+	ERIS_DATA_CRYPT=n
+fi
 
 PARTITION="${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}"
 MOUNTDEVICE="${PARTITION}"
