@@ -63,7 +63,7 @@ then
 	mkfs.vfat -c -n DATA ${MOUNTDEVICE} >/dev/null 2>&1
 elif [ "${FILESYSTEM}" = "f2fs" ]
 then
-	mkfs.f2fs -l DATA ${MOUNTDEVICE} >/dev/null 2>&1
+	mkfs.f2fs -f -l DATA ${MOUNTDEVICE} >/dev/null 2>&1
 else
 	mkfs.${FILESYSTEM} -c -L DATA -q ${MOUNTDEVICE} >/dev/null 2>&1
 fi
