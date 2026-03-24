@@ -66,7 +66,7 @@ IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', 
 
 # Containers and virtualization
 #
-IMAGE_INSTALL:append = " docker"
+IMAGE_INSTALL:append = " docker docker-compose"
 IMAGE_INSTALL:append = " eris-containers"
 
 # Librairies needed by the API
