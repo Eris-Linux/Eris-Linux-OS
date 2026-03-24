@@ -14,6 +14,9 @@ then
 	mkdir -p "${WORKDIR}"  "${UPPERDIR}"
 fi
 
+# Take a backup of original /etc/network. See below.
+if [ -f /etc/eris-linux/network ]; then cp /etc/eris-linux/network /tmp/; fi
+
 mount none /etc -t overlay -o lowerdir=/etc,workdir="${WORKDIR}",upperdir="${UPPERDIR}"
 
 # Force /etc/eris-linux/network to be on the overlay.
@@ -21,5 +24,10 @@ mount none /etc -t overlay -o lowerdir=/etc,workdir="${WORKDIR}",upperdir="${UPP
 #
 touch /etc/eris-linux/network
 
-# Copy `organization-id` written by `prepare-image` on the overlay.
+# Restore original network file if it is corrupted.
+# This is a dirty hack, but this file is very important, it's the only link with the device manager.
+if [ ! -s /etc/eris-linux/network ]; then if [ -e /tmp/network ]; then cp /tmp/network /etc/eris-linux/network; fi; fi
+rm -f /tmp/network
+
+# Copy `organization-id` written by `prepare-image` on the overlay to protect it from system updates.
 if [ -f /usr/share/eris-linux/organization-id ]; then cp /usr/share/eris-linux/organization-id /etc/eris-linux; fi
