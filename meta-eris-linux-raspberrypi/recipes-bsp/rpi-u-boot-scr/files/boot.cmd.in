@@ -33,7 +33,7 @@ else
 		if test "${rollback}" = "0"
 		then
 			# Previous boot as failed.
-			setenv roolback 2
+			setenv rollback 2
 		fi
 		if test "${rollback}" = "1"
 		then

@@ -1228,7 +1228,7 @@ int eris_restore_factory_preset(void);
 
 
 /**
- * @brief  Roolback to the previous system version
+ * @brief  Rollback to the previous system version
  *
  * @ingroup SYSTEM_UPDATE
  *
