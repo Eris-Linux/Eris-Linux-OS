@@ -7,9 +7,9 @@
 #
 
 source /usr/share/eris-linux/partitions
-if [ -f /etc/eris-linux/encryption ]
+if [ -f /boot/data-encryption ]
 then
-	source /etc/eris-linux/encryption
+	source /boot/data-encryption
 else
 	ERIS_DATA_CRYPT=n
 fi

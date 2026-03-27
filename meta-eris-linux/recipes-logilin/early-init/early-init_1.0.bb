@@ -19,7 +19,9 @@ S = "${WORKDIR}/git"
 SRC_URI += "file://010-partitionning-at-first-boot"
 SRC_URI += "file://020-mount-tmp"
 SRC_URI += "file://030-mount-tmpfs-home"
+SRC_URI += "file://035-mount-boot-partition"
 SRC_URI += "file://040-mount-data-partition"
+SRC_URI += "file://045-umount-boot-partition"
 SRC_URI += "file://050-mount-overlayfs-on-etc"
 
 do_install () {
@@ -30,6 +32,8 @@ do_install () {
 	install -m 0755 ${WORKDIR}/010-partitionning-at-first-boot      ${D}${sysconfdir}/early-init.d 
 	install -m 0755 ${WORKDIR}/020-mount-tmp                        ${D}${sysconfdir}/early-init.d 
 	install -m 0755 ${WORKDIR}/030-mount-tmpfs-home                 ${D}${sysconfdir}/early-init.d 
+	install -m 0755 ${WORKDIR}/035-mount-boot-partition             ${D}${sysconfdir}/early-init.d 
 	install -m 0755 ${WORKDIR}/040-mount-data-partition             ${D}${sysconfdir}/early-init.d
+	install -m 0755 ${WORKDIR}/045-umount-boot-partition            ${D}${sysconfdir}/early-init.d
 	install -m 0755 ${WORKDIR}/050-mount-overlayfs-on-etc           ${D}${sysconfdir}/early-init.d
 }

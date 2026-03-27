@@ -1,0 +1,10 @@
+#! /bin/sh
+#
+# SPDX-License-Identifier: MIT
+#
+source /usr/share/eris-linux/partitions
+
+if [ ! -b "${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT}" ]
+then
+    mount ${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT}  /boot
+fi
