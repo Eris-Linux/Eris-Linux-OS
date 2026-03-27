@@ -16,10 +16,8 @@ fi
 
 mount none /etc -t overlay -o lowerdir=/etc,workdir="${WORKDIR}",upperdir="${UPPERDIR}"
 
-# Force /etc/eris-linux/network to be on the overlay.
-# This is needed on the first boot to save the network parameters written by `prepare-image`.
+# Force /etc/eris-linux/network and /etc/eris-linux/organization-id to be on the overlay.
+# This is needed on the first boot to save the parameters written by `prepare-image`.
 #
 touch /etc/eris-linux/network
-
-# Copy `organization-id` written by `prepare-image` on the overlay to protect it from system updates.
-if [ -f /usr/share/eris-linux/organization-id ]; then cp /usr/share/eris-linux/organization-id /etc/eris-linux; fi
+touch /etc/eris-linux/organization-id
