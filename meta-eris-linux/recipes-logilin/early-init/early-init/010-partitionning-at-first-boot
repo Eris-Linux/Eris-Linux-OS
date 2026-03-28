@@ -61,6 +61,10 @@ then
 		25
 		w
 	EOF7
+
+	# Erase the first sectors of Data to invalid it.
+	dd if=/dev/zero of=${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA} bs=4M count=4
+
 	mount ${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT} /boot
 	/usr/sbin/force-boot-on-partition A
 	sync
@@ -68,8 +72,7 @@ then
 	while true; do : ; done
 fi
 
-data_part="${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}"
-part_type=$(fdisk -l /dev/mmcblk0 | awk '($1 == "'${data_part}'") { print $6 }')
+data_part=$(fdisk -l /dev/mmcblk0 | awk '($1 == "'${data_part}'") { print $6 }')
 
 # At second boot we initialize the crypted data partition
 #
