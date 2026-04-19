@@ -8,11 +8,15 @@ fi
 
 mount "${DEVNAME}" /media  || exit 1
 
-for tk in /media/*.token
+model="$(cat /usr/share/eris-linux/system-model)
+if [ "${model}" = "" ]; then exit 1; fi
+
+for f in $(ls -R /media/eris-linux_${model}*.tar.bz2)
 do
-	if [ -f "${tk}" ]
+	if [ -f "${f}" ]
 	then
-		cp "${tk}" /etc/eris-linux/token
+		mkdir -p /tmp/direct-update
+		cp "${f}" /tmp/direct-update/image
 		break
 	fi
 done
