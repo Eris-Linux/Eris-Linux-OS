@@ -26,10 +26,10 @@
 #define CONTACT_PERIOD_PREFIX     "status_upload_period_seconds="
 #define CONTAINER_UPDATE_POLICY   "container_update_policy="
 
-#define REBOOT_NEEDED_FLAG_FILE   "/tmp/reboot-is-needed"
-#define SYSTEM_UPDATE_STATUS_FILE "/tmp/system-update-status"
+#define REBOOT_NEEDED_FLAG_FILE   "/var/run/reboot-is-needed"
+#define SYSTEM_UPDATE_STATUS_FILE "/var/run/system-update-status"
 
-#define SERVER_CONTACT_FIFO       "/tmp/contact-eris-server"
+#define SERVER_CONTACT_FIFO       "/var/run/contact-eris-server"
 
 
 // ---------------------- Private method declarations.

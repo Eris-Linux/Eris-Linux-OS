@@ -15,8 +15,8 @@ for f in $(ls -R /media/eris-linux_${model}*.tar.bz2)
 do
 	if [ -f "${f}" ]
 	then
-		mkdir -p /tmp/direct-update
-		cp "${f}" /tmp/direct-update/image
+		mkdir -p /var/run/direct-update
+		cp "${f}" /var/run/direct-update/image
 		break
 	fi
 done

@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (access("/tmp/reboot-is-needed", F_OK) == 0) {
+		if (access("/var/run/reboot-is-needed", F_OK) == 0) {
 
 			// Update ready: display the reboot symbol
 			int xc = width - 80;
