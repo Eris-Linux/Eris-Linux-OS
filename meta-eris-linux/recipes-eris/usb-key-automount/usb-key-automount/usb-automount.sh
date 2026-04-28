@@ -16,7 +16,8 @@ do
 	if [ -f "${f}" ]
 	then
 		mkdir -p /var/run/direct-update
-		cp "${f}" /var/run/direct-update/image
+		cp "${f}" /var/run/direct-update/tmp
+		mv /var/run/direct-update/tmp /var/run/direct-update/image
 		break
 	fi
 done
