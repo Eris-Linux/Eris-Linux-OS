@@ -8,7 +8,7 @@ fi
 
 mount "${DEVNAME}" /media  || exit 1
 
-model="$(cat /usr/share/eris-linux/system-model)
+model="$(cat /usr/share/eris-linux/system-model)"
 if [ "${model}" = "" ]; then exit 1; fi
 
 for f in $(ls -R /media/eris-linux_${model}*.tar.bz2)
