@@ -1,0 +1,77 @@
+# U-boot script for eris-linux update system
+#
+# (c) 2024-2026 Logilin
+#
+# We use the following environment variables
+# - current_boot: the partition number of the last boot.
+# - next_boot_1: the partition number on which we'll try to boot at first attempt.
+# - next_boot_2: the partition number on which we'll try to boot at second attempt.
+# - next_boot_3: the partition number on which we'll try to boot at third attempt.
+# - recovery_part: the recovery partition number (never updated).
+# - rollback: 0 normal boot, 1 first boot after update, 2 rollback from failed boot.
+
+# Our partition scheme for A/B/R update mechanism is:
+#
+# - part #1: BOOT (the bootloader).
+# - part #2: RECOVERY (the recovery partition whose content is never modified).
+# - part #3: SYSTEM-A (one of the two system partitions).
+# - part #4: Extended partition
+# - part #5: SYSTEM-B (one of the two system partitions).
+# - part #6: DATA (the runtime writable storage partition).
+
+# We use the following meta-variables
+#
+# - @@ERIS_KERNEL_IMAGE@@: name of the kernel file.
+# - @@ERIS_GRAPHIC@@: use a graphic display (for splashscreen) [0, 1].
+
+# Try to display our splashscreen.
+if test "@@ERIS_GRAPHIC@@" = "1"
+then
+	cls
+	load mmc @@ERIS_DEVICE_NUMBER@@:1 ${loadaddr} eris-splashscreen.bmp
+	bmp display ${loadaddr}
+fi
+
+# Set a default configuration
+if test "${boot_next_1}" = ""
+then
+	# Default to recovery mmcblk0p2
+	setenv  recovery_part 2
+	setenv  current_boot  ${recovery_part}
+	setenv  boot_next_1   ${recovery_part}
+	setenv  boot_next_2   ${recovery_part}
+	setenv  boot_next_3   ${recovery_part}
+	setenv  rollback      0
+	saveenv
+else
+	if test "${current_boot}" != "${boot_next_1}"
+	then
+		# We are booting on a partition different of the previous one.
+		if test "${rollback}" = "0"
+		then
+			# Previous boot as failed.
+			setenv rollback 2
+		fi
+		if test "${rollback}" = "1"
+		then
+			# First boot after update
+			setenv rollback 0
+		fi
+	fi
+	setenv current_boot    ${boot_next_1}
+	setenv boot_next_1     ${boot_next_2}
+	setenv boot_next_2     ${boot_next_3}
+	setenv boot_next_3     ${recovery_part}
+	saveenv
+fi
+
+# Load the kernel
+load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} boot/@@ERIS_KERNEL@@
+
+##load mmc 0:${current_boot} ${fdt_addr} /boot/bcm2710-rpi-3-b.dtb
+fdt addr ${fdt_addr}
+fdt get value bootargs /chosen bootargs
+
+setenv bootargs "${bootargs} root=/dev/mmcblk@@ERIS_BLOCK_DEVICE@@p${current_boot} quiet"
+
+@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} - ${fdt_addr}
