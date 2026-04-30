@@ -21,8 +21,10 @@
 
 # We use the following meta-variables
 #
-# - @@ERIS_KERNEL_IMAGE@@: name of the kernel file.
+# - @@ERIS_BLOCK_DEVICE@@: block device number (ex: 0 for mmc 0)
+# - @@ERIS_BOOT_COMMAND@@: the command to use to boot the loaded kernel.
 # - @@ERIS_GRAPHIC@@: use a graphic display (for splashscreen) [0, 1].
+# - @@ERIS_KERNEL_IMAGE@@: name of the kernel file.
 
 # Try to display our splashscreen.
 if test "@@ERIS_GRAPHIC@@" = "1"
@@ -66,7 +68,7 @@ else
 fi
 
 # Load the kernel
-load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} boot/@@ERIS_KERNEL@@
+load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} boot/@@ERIS_KERNEL_IMAGE@@
 
 ##load mmc 0:${current_boot} ${fdt_addr} /boot/bcm2710-rpi-3-b.dtb
 fdt addr ${fdt_addr}

@@ -14,10 +14,10 @@ inherit deploy
 
 # KERNEL_BOOTCMD and KERNEL_IMAGETYPE are filled in meta-rapsberrypi/conf/machine/<machine>.conf
 
-ERIS_KERNEL_IMAGE = "${KERNEL_IMAGETYPE}"
-ERIS_GRAPHIC = "0"
 ERIS_BLOCK_DEVICE = "0"
 ERIS_BOOT_COMMAND = "${KERNEL_BOOT_COMMAND}"
+ERIS_GRAPHIC = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', 1, 0, d)}"
+ERIS_KERNEL_IMAGE = "${KERNEL_IMAGETYPE}"
 
 do_compile:prepend() {
 	sed -e 's/@@ERIS_KERNEL_IMAGE@@/${ERIS_KERNEL_IMAGE}/' \
