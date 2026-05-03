@@ -67,19 +67,19 @@ fi
 if test "@@ERIS_GRAPHIC@@" = "1"
 then
 	cls
-	load mmc @@ERIS_BLOCK_DEVICE@@:${boot_next_1} ${loadaddr} /boot/splashscreen.bmp
+	load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${boot_next_1} ${loadaddr} /boot/splashscreen.bmp
 	bmp display ${loadaddr}
 fi
 
 # Load the kernel
-load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} /boot/@@ERIS_KERNEL_IMAGE@@
+load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} /boot/@@ERIS_KERNEL_IMAGE@@
 
 # Load the device tree
 if test "@@ERIS_LOAD_FDT@@" = "1"
 then
-	load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${fdt_addr_r} /boot/@@ERIS_FDT_IMAGE@@
+	load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${current_boot} ${@@ERIS_FDT_ADDR_VAR@@} /boot/@@ERIS_FDT_IMAGE@@
 fi
-fdt addr ${fdt_addr_r}
+fdt addr ${@@ERIS_FDT_ADDR_VAR@@}
 
 # Set bootargs
 if test "@@ERIS_CHOSEN_BOOTARGS@@" = "1"
@@ -91,5 +91,5 @@ fi
 
 setenv bootargs "${bootargs} root=/dev/mmcblk@@ERIS_BLOCK_DEVICE@@p${current_boot} quiet rootwait ro init=/sbin/early-init @@ERIS_CONSOLE@@"
 
-@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} - ${fdt_addr_r}
+@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} - ${@@ERIS_FDT_ADDR_VAR@@}
 	
