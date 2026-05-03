@@ -72,14 +72,14 @@ then
 fi
 
 # Load the kernel
-load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} boot/@@ERIS_KERNEL_IMAGE@@
+load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} /boot/@@ERIS_KERNEL_IMAGE@@
 
 # Load the device tree
 if test "@@ERIS_LOAD_FDT@@" = "1"
 then
-	load mmc @@ERIS_BLOCK_DEVICE@@::${current_boot} ${fdt_addr} /boot/@@ERIS_FDT_IMAGE@@
+	load mmc @@ERIS_BLOCK_DEVICE@@:${current_boot} ${fdt_addr_r} /boot/@@ERIS_FDT_IMAGE@@
 fi
-fdt addr ${fdt_addr}
+fdt addr ${fdt_addr_r}
 
 # Set bootargs
 if test "@@ERIS_CHOSEN_BOOTARGS@@" = "1"
@@ -89,7 +89,7 @@ else
 	setenv bootargs ""
 fi
 
-setenv bootargs "${bootargs} root=/dev/mmcblk@@ERIS_BLOCK_DEVICE@@p${current_boot} quiet rootwait ro init=/sbin/early-init"
+setenv bootargs "${bootargs} root=/dev/mmcblk@@ERIS_BLOCK_DEVICE@@p${current_boot} quiet rootwait ro init=/sbin/early-init @@ERIS_CONSOLE@@"
 
-@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} - ${fdt_addr}
+@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} - ${fdt_addr_r}
 	
