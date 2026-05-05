@@ -4,6 +4,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "                      \
     file://boot.cmd.in            \
     file://eris-splashscreen.bmp  \
+	file://gpio-fragment.cfg      \
     "
 
 DEPENDS += "u-boot-mkimage-native"
@@ -20,6 +21,8 @@ ERIS_FDT_IMAGE       ?= ""
 ERIS_GRAPHIC         ?= "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', 1, 0, d)}"
 ERIS_KERNEL_IMAGE    ?= "zImage"
 ERIS_LOAD_FDT        ?= "0"
+ERIS_RESET_GPIO_IN   ?= ""
+ERIS_RESET_GPIO_OUT  ?= ""
 
 do_compile:prepend() {
 	sed                                                        \
@@ -33,6 +36,8 @@ do_compile:prepend() {
 	  -e 's/@@ERIS_GRAPHIC@@/${ERIS_GRAPHIC}/'                 \
 	  -e 's/@@ERIS_KERNEL_IMAGE@@/${ERIS_KERNEL_IMAGE}/'       \
 	  -e 's/@@ERIS_LOAD_FDT@@/${ERIS_LOAD_FDT}/'               \
+	  -e 's/@@ERIS_RESET_GPIO_IN@@/${ERIS_RESET_GPIO_IN}/'     \
+	  -e 's/@@ERIS_RESET_GPIO_OUT@@/${ERIS_RESET_GPIO_OUT}/'   \
 	    "${WORKDIR}/boot.cmd.in" > "${WORKDIR}/boot.cmd"
 	${UBOOT_MKIMAGE} -A ${UBOOT_ARCH} -T script -C none -n "Boot script" -d "${WORKDIR}/boot.cmd" "${WORKDIR}/boot.scr"
 }

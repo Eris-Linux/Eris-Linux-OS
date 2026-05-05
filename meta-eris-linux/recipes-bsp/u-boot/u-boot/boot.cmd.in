@@ -22,15 +22,33 @@
 # We use the following meta-variables (filled in u-boot.bb_append)
 #
 # - @@ERIS_BLOCK_DEVICE@@: block device number (ex: 0 for mmc 0)
-# - @@ERIS_GRAPHIC@@: use a graphic display (for splashscreen) [0, 1].
-# - @@ERIS_KERNEL_IMAGE@@: name of the kernel file.
-# - @@ERIS_LOAD_FDT@@: Load a flattened Device Tree image [0, 1].
-# - @@ERIS_FDT_IMAGE@@: Name of the Flattened Device Tree.
-# - @@ERIS_CHOSEN_BOOTARGS@@: Initializa bootargs from the Device Tree [0, 1].
 # - @@ERIS_BOOT_COMMAND@@: the command to use to boot the loaded kernel.
+# - @@ERIS_BOOT_MEDIA@@: the type of block device media (ex: mmc).
+# - @@ERIS_CHOSEN_BOOTARGS@@: Initialize bootargs from the Device Tree? [0, 1].
+# - @@ERIS_CONSOLE@@: string to add to bootargs to setup console (ex: console=ttyS0,115200).
+# - @@ERIS_FDT_ADDR_VAR@@: name of the environment variable containing FDT address (ex: fdt_addr_r).
+# - @@ERIS_FDT_IMAGE@@: name of the Flatened Device Tree image file.
+# - @@ERIS_GRAPHIC@@: use a graphic display (for splashscreen)? [0, 1].
+# - @@ERIS_KERNEL_IMAGE@@: name of the kernel file (ex. zImage).
+# - @@ERIS_LOAD_FDT@@: Load a flattened Device Tree image? [0, 1].
+# - @@ERIS_RESET_GPIO_IN@@: input GPIO to test for factory reset.
+# - @@ERIS_RESET_GPIO_OUT@@: output GPIO to set for factory reset.
+# - @@ERIS_UBOOT_LED_GPIO@@: the GPIO of the LED to activate at start of boot.
+# - @@ERIS_UBOOT_LED_POWER@@: the start status ([0, 1]) of the boot LED.
 
+
+if test "@@ERIS_UBOOT_LED_GPIO@@" != ""
+then
+	if test "@@ERIS_UBOOT_LED_POWER@@" = "1"
+	then
+		gpio set @@ERIS_UBOOT_LED_GPIO@@
+	else
+		gpio clear @@ERIS_UBOOT_LED_GPIO@@
+	fi
+fi
 
 # Set a default configuration
+#
 if test "${boot_next_1}" = ""
 then
 	# Default to recovery mmcblk0p2
@@ -63,7 +81,33 @@ else
 	saveenv
 fi
 
-# Try to display our splashscreen.
+
+# Test if reset GPIOs are connected
+#
+if test "@@ERIS_RESET_GPIO_IN@@" != ""
+then
+	if test "@@ERIS_RESET_GPIO_OUT@@" != ""
+	then
+		gpio input @@ERIS_RESET_GPIO_IN@@
+		gpio set @@ERIS_RESET_GPIO_OUT@@
+		sleep 0.1
+		gpio read value @@ERIS_RESET_GPIO_IN@@
+		if test ${value} = "1"
+		then
+			gpio clear @@ERIS_RESET_GPIO_OUT@@
+			sleep 0.1
+			gpio read value @@ERIS_RESET_GPIO_IN@@
+			if test ${value} = "0"
+			then
+				setenv current_boot ${recovery_part}
+			fi
+		fi
+	fi
+fi
+
+
+# Try to display our splashscreen
+#
 if test "@@ERIS_GRAPHIC@@" = "1"
 then
 	cls
@@ -71,10 +115,14 @@ then
 	bmp display ${loadaddr}
 fi
 
+
 # Load the kernel
+#
 load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} /boot/@@ERIS_KERNEL_IMAGE@@
 
+
 # Load the device tree
+#
 if test "@@ERIS_LOAD_FDT@@" = "1"
 then
 	load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${current_boot} ${@@ERIS_FDT_ADDR_VAR@@} /boot/@@ERIS_FDT_IMAGE@@
@@ -82,14 +130,16 @@ fi
 fdt addr ${@@ERIS_FDT_ADDR_VAR@@}
 
 # Set bootargs
+#
 if test "@@ERIS_CHOSEN_BOOTARGS@@" = "1"
 then
 	fdt get value bootargs /chosen bootargs
 else
 	setenv bootargs ""
 fi
-
 setenv bootargs "${bootargs} root=/dev/mmcblk@@ERIS_BLOCK_DEVICE@@p${current_boot} quiet rootwait ro init=/sbin/early-init @@ERIS_CONSOLE@@"
 
+# Go!
+#
 @@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} - ${@@ERIS_FDT_ADDR_VAR@@}
 	
