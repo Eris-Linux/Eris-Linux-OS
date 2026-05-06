@@ -2,9 +2,12 @@
 
 source /usr/share/eris-linux/partitions
 
-# At first boot we prepare the partitionning scheme.
+
+current_part=$(sed -e "s%^.*root=${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}\([0-9]\+\).*$%\1%" /proc/cmdline)
+
+# At first boot or when going back to factory preset, we prepare the partitionning scheme.
 #
-if [ ! -b "${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_EXTENDED}" ]
+if [ "${current_part}" = "${ERIS_PARTITION_SYSTEM_R}" ] || [ ! -b "${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_EXTENDED}" ]
 then
 	extended_start=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_SYSTEM_A}'") { printf $3 + 1}' )
 	# the rootfs size is slightly increased to avoid _no space left_ message
@@ -62,7 +65,7 @@ then
 		w
 	EOF7
 
-	# Erase the first sectors of Data to invalid it.
+	# Erase the first sectors of Data to invalidate it.
 	dd if=/dev/zero of=${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA} bs=4M count=4
 
 	mount ${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT} /boot
