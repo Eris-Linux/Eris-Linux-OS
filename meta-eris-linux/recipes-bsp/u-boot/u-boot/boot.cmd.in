@@ -2,41 +2,57 @@
 #
 # (c) 2024-2026 Logilin
 #
-# We use the following environment variables
-# - current_boot: the partition number of the last boot.
-# - next_boot_1: the partition number on which we'll try to boot at first attempt.
-# - next_boot_2: the partition number on which we'll try to boot at second attempt.
-# - next_boot_3: the partition number on which we'll try to boot at third attempt.
-# - recovery_part: the recovery partition number (never updated).
-# - rollback: 0 normal boot, 1 first boot after update, 2 rollback from failed boot.
+
+# We use and modify the following environment variables:
+# - boot_attempts: the remaining attempts for candidate_partition.
+# - candidate_partition: the partition number on which we'll try to boot.
+# - rollback_level: the current level of rollback.
+# - reset_requested: reset GPIO pressed during boot.
+
+# We use the following variables not saved in environment:
+# - ready_to_boot: default to 1, 0 if the boot is impossible.
+# - initramfs_size: size of the recovery rootfs loaded in RAM (zero for partition-based boot).
 
 # Our partition scheme for A/B/R update mechanism is:
 #
-# - part #1: BOOT (the bootloader).
-# - part #2: RECOVERY (the recovery partition whose content is never modified).
-# - part #3: SYSTEM-A (one of the two system partitions).
-# - part #4: Extended partition
-# - part #5: SYSTEM-B (one of the two system partitions).
-# - part #6: DATA (the runtime writable storage partition).
+# - part #1: BOOT (the bootloader and recovery stuff: kernel, device tree and initramfs).
+# - part #2: SYSTEM-A (one of the two system partitions).
+# - part #3: SYSTEM-B (one of the two system partitions).
+# - part #4: DATA (the runtime writable storage partition).
 
 # We use the following meta-variables (filled in u-boot.bb_append)
 #
-# - @@ERIS_BLOCK_DEVICE@@: block device number (ex: 0 for mmc 0)
-# - @@ERIS_BOOT_COMMAND@@: the command to use to boot the loaded kernel.
 # - @@ERIS_BOOT_MEDIA@@: the type of block device media (ex: mmc).
-# - @@ERIS_CHOSEN_BOOTARGS@@: Initialize bootargs from the Device Tree? [0, 1].
-# - @@ERIS_CONSOLE@@: string to add to bootargs to setup console (ex: console=ttyS0,115200).
+# - @@ERIS_BLOCK_DEVICE@@: block device number (ex: 0 for mmc 0)
+# - @@ERIS_BOOT_PART@@: Boot partition number (ex. 1).
+# - @@ERIS_SYSTEM_A_PART@@: System-A partition number (ex. 2).
+# - @@ERIS_SYSTEM_B_PART@@: System-B partition number (ex. 3).
+# - @@ERIS_DATA_PART@@: Data partition number (ex. 4).
+
+# - @@ERIS_KERNEL_IMAGE@@: name of the kernel file (ex. zImage).
+
+# - @@ERIS_FDT_MODE@@: "load" (load an image), "firmware" (already loaded by firmware), "none" (no fdt).
 # - @@ERIS_FDT_ADDR_VAR@@: name of the environment variable containing FDT address (ex: fdt_addr_r).
 # - @@ERIS_FDT_IMAGE@@: name of the Flatened Device Tree image file.
+
+# - @@ERIS_CHOSEN_BOOTARGS@@: Initialize bootargs from the Device Tree? [0, 1].
+# - @@ERIS_CONSOLE@@: string to add to bootargs to setup console (ex: console=ttyS0,115200).
+
+# - @@ERIS_BOOT_COMMAND@@: the command to use to boot the loaded kernel.
+# - @@ERIS_DEBUG_DISPLAY@@: display our variables before booting? [0, 1].
+
+# - @@ERIS_RECOVERY_RAMFS@@: the name of the recovery initramfs.
+
 # - @@ERIS_GRAPHIC@@: use a graphic display (for splashscreen)? [0, 1].
-# - @@ERIS_KERNEL_IMAGE@@: name of the kernel file (ex. zImage).
-# - @@ERIS_LOAD_FDT@@: Load a flattened Device Tree image? [0, 1].
-# - @@ERIS_RESET_GPIO_IN@@: input GPIO to test for factory reset.
+
+# - @@ERIS_RESET_GPIO_IN@@: input GPIO to test for factory reset (leave empty to ignore).
 # - @@ERIS_RESET_GPIO_OUT@@: output GPIO to set for factory reset.
-# - @@ERIS_UBOOT_LED_GPIO@@: the GPIO of the LED to activate at start of boot.
+# - @@ERIS_UBOOT_LED_GPIO@@: the GPIO of the LED to activate at start of boot (leave empty to ignore).
 # - @@ERIS_UBOOT_LED_POWER@@: the start status ([0, 1]) of the boot LED.
 
 
+# Turn the boot LED on.
+#
 if test "@@ERIS_UBOOT_LED_GPIO@@" != ""
 then
 	if test "@@ERIS_UBOOT_LED_POWER@@" = "1"
@@ -47,43 +63,10 @@ then
 	fi
 fi
 
-# Set a default configuration
-#
-if test "${boot_next_1}" = ""
-then
-	# Default to recovery mmcblk0p2
-	setenv  recovery_part 2
-	setenv  current_boot  ${recovery_part}
-	setenv  boot_next_1   ${recovery_part}
-	setenv  boot_next_2   ${recovery_part}
-	setenv  boot_next_3   ${recovery_part}
-	setenv  rollback      0
-	saveenv
-else
-	if test "${current_boot}" != "${boot_next_1}"
-	then
-		# We are booting on a partition different of the previous one.
-		if test "${rollback}" = "0"
-		then
-			# Previous boot as failed.
-			setenv rollback 2
-		fi
-		if test "${rollback}" = "1"
-		then
-			# First boot after update
-			setenv rollback 0
-		fi
-	fi
-	setenv current_boot    ${boot_next_1}
-	setenv boot_next_1     ${boot_next_2}
-	setenv boot_next_2     ${boot_next_3}
-	setenv boot_next_3     ${recovery_part}
-	saveenv
-fi
-
-
 # Test if reset GPIOs are connected
 #
+setenv reset_requested  0
+
 if test "@@ERIS_RESET_GPIO_IN@@" != ""
 then
 	if test "@@ERIS_RESET_GPIO_OUT@@" != ""
@@ -92,14 +75,113 @@ then
 		gpio set @@ERIS_RESET_GPIO_OUT@@
 		sleep 0.1
 		gpio read value @@ERIS_RESET_GPIO_IN@@
-		if test ${value} = "1"
+		if test "${value}" = "1"
 		then
 			gpio clear @@ERIS_RESET_GPIO_OUT@@
 			sleep 0.1
 			gpio read value @@ERIS_RESET_GPIO_IN@@
-			if test ${value} = "0"
+			if test "${value}" = "0"
 			then
-				setenv current_boot ${recovery_part}
+				setenv reset_requested  1
+			fi
+		fi
+		gpio clear @@ERIS_RESET_GPIO_OUT@@
+	fi
+fi
+
+
+# Set a default configuration for environment variables at first boot.
+#
+if test "${candidate_partition}" != "@@ERIS_SYSTEM_A_PART@@"
+then
+	if test "${candidate_partition}" != "@@ERIS_SYSTEM_B_PART@@"
+	then
+		setenv  candidate_partition  @@ERIS_SYSTEM_A_PART@@
+	fi
+fi
+
+if test "${boot_attempts}" != "3" -a "${boot_attempts}" != "2" -a "${boot_attempts}" != "1" -a "${boot_attempts}" != "0"
+then
+	setenv  boot_attempts  3
+fi
+
+if test "${rollback_level}" != "0" -a "${rollback_level}" != "1" -a "${rollback_level}" != "2"
+then
+	setenv  rollback_level  0
+fi
+
+
+# Select the boot media.
+#
+if test ${boot_attempts} -gt 0
+then
+	# Normal boot on candidate partition.
+	#
+	setexpr boot_attempts ${boot_attempts} - 1
+	saveenv
+	setenv initramfs_size 0
+	setenv ready_to_boot  1
+
+else
+	# Previous boots on candidate partition have failed.
+	#
+	if test "${rollback_level}" = "0"
+	then
+		# Rollback to other partition.
+		#
+		if test "${candidate_partition}" = "@@ERIS_SYSTEM_A_PART@@"
+		then
+			setenv candidate_partition @@ERIS_SYSTEM_B_PART@@
+		else
+			setenv candidate_partition @@ERIS_SYSTEM_A_PART@@
+		fi
+		setenv boot_attempts 2
+		setenv rollback_level 1
+		saveenv
+		setenv initramfs_size 0
+		setenv ready_to_boot  1
+
+	else
+		if test "${rollback_level}" = "1"
+		then
+			# Erase start of Data partition to force reformatting by Linux init script.
+			#
+			if part start @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@ @@ERIS_DATA_PART@@ data_start
+			then
+				if mmc dev @@ERIS_BLOCK_DEVICE@@
+				then
+					mw.b ${loadaddr} 0 0x100000
+					if mmc write ${loadaddr} ${data_start} 0x800
+					then
+						setenv rollback_level 2
+						setenv boot_attempts 2
+						setenv data_start
+						saveenv
+						setenv initramfs_size 0
+						setenv ready_to_boot 1
+					else
+						echo "Unable to erase data partition."
+						setenv ready_to_boot 0
+					fi
+				else
+					echo "Unable to select mmc device @@ERIS_BLOCK_DEVICE@@"
+					setenv ready_to_boot 0
+				fi
+			else
+				echo "Unable to get start of data partition."
+				setenv ready_to_boot 0
+			fi
+
+		else
+			# Load initramfs to take emergency measures (removable media, etc.)
+			#
+			if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:@@ERIS_BOOT_PART@@ ${ramdisk_addr_r} /@@ERIS_RECOVERY_RAMFS@@
+			then
+				setenv initramfs_size "${filesize}"
+				setenv ready_to_boot 1
+			else
+				echo "Unable to load recovery initramfs."
+				setenv ready_to_boot 0
 			fi
 		fi
 	fi
@@ -108,38 +190,158 @@ fi
 
 # Try to display our splashscreen
 #
-if test "@@ERIS_GRAPHIC@@" = "1"
+if test "${rollback_level}" = "0" -o "${rollback_level}" = "1"
 then
-	cls
-	load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${boot_next_1} ${loadaddr} /boot/splashscreen.bmp
-	bmp display ${loadaddr}
+	if test "@@ERIS_GRAPHIC@@" = "1"
+	then
+		cls
+		if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${candidate_partition} ${loadaddr} /boot/splashscreen.bmp
+		then
+			bmp display ${loadaddr}
+		fi
+	fi
 fi
 
 
 # Load the kernel
 #
-load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${current_boot} ${kernel_addr_r} /boot/@@ERIS_KERNEL_IMAGE@@
+if test "${ready_to_boot}" != "0"
+then
+	if test "${initramfs_size}" = "0"
+	then
+		if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${candidate_partition} ${kernel_addr_r} /boot/@@ERIS_KERNEL_IMAGE@@
+		then
+			setenv ready_to_boot 1
+		else
+			echo "Unable to load kernel from partition ${candidate_partition}."
+			setenv ready_to_boot 0
+		fi
+	else
+		if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:@@ERIS_BOOT_PART@@ ${kernel_addr_r} /@@ERIS_KERNEL_IMAGE@@
+		then
+			setenv ready_to_boot 1
+		else
+			echo "Unable to load recovery kernel."
+			setenv ready_to_boot 0
+		fi
+	fi
+fi
 
 
 # Load the device tree
 #
-if test "@@ERIS_LOAD_FDT@@" = "1"
+if test "${ready_to_boot}" != "0"
 then
-	load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${current_boot} ${@@ERIS_FDT_ADDR_VAR@@} /boot/@@ERIS_FDT_IMAGE@@
+	if test "@@ERIS_FDT_MODE@@" = "load"
+	then
+		if test "${initramfs_size}" = "0"
+		then
+			if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${candidate_partition} ${@@ERIS_FDT_ADDR_VAR@@} /boot/@@ERIS_FDT_IMAGE@@
+			then
+				if fdt addr ${@@ERIS_FDT_ADDR_VAR@@}
+				then
+					setenv ready_to_boot 1
+				else
+					echo "Unable to select FDT at ${@@ERIS_FDT_ADDR_VAR@@}."
+					setenv ready_to_boot 0
+				fi
+			else
+				echo "Unable to load FDT from partition ${candidate_partition}."
+				setenv ready_to_boot 0
+			fi
+		else
+			if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:@@ERIS_BOOT_PART@@ ${@@ERIS_FDT_ADDR_VAR@@} /@@ERIS_FDT_IMAGE@@
+			then
+				if fdt addr ${@@ERIS_FDT_ADDR_VAR@@}
+				then
+					setenv ready_to_boot 1
+				else
+					echo "Unable to select FDT at ${@@ERIS_FDT_ADDR_VAR@@}."
+					setenv ready_to_boot 0
+				fi
+			else
+				echo "Unable to load recovery FDT."
+				setenv ready_to_boot 0
+			fi
+
+		fi
+	else
+		if test "@@ERIS_FDT_MODE@@" = "firmware"
+		then
+			if fdt addr ${@@ERIS_FDT_ADDR_VAR@@}
+			then
+				setenv ready_to_boot 1
+			else
+				echo "Unable to select FDT at ${@@ERIS_FDT_ADDR_VAR@@}."
+				setenv ready_to_boot 0
+			fi
+		fi
+	fi
 fi
-fdt addr ${@@ERIS_FDT_ADDR_VAR@@}
+
 
 # Set bootargs
 #
-if test "@@ERIS_CHOSEN_BOOTARGS@@" = "1"
+if test "${ready_to_boot}" != "0"
 then
-	fdt get value bootargs /chosen bootargs
-else
 	setenv bootargs ""
+	if test "@@ERIS_CHOSEN_BOOTARGS@@" = "1"
+	then
+		if test "@@ERIS_FDT_MODE@@" != "none"
+		then
+			if fdt get value bootargs /chosen bootargs
+			then
+				setenv ready_to_boot 1
+			else
+				setenv bootargs ""
+			fi
+		fi
+	fi
+	
+	if test "${initramfs_size}" = "0"
+	then
+		if part uuid @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${candidate_partition} root_partuuid
+		then
+			setenv bootargs "${bootargs} root=PARTUUID=${root_partuuid} quiet rootwait ro init=/sbin/early-init @@ERIS_CONSOLE@@ eris.reset_requested=${reset_requested}"
+			setenv boot_on_ramfs  "-"
+		else
+			echo "Unable to get UUID for partition ${candidate_partition}."
+			setenv ready_to_boot 0
+		fi
+	else
+		setenv bootargs "${bootargs} rdinit=/init quiet rootwait @@ERIS_CONSOLE@@ eris.reset_requested=${reset_requested}"
+		setenv boot_on_ramfs  "${ramdisk_addr_r}:${initramfs_size}"
+	fi
 fi
-setenv bootargs "${bootargs} root=/dev/mmcblk@@ERIS_BLOCK_DEVICE@@p${current_boot} quiet rootwait ro init=/sbin/early-init @@ERIS_CONSOLE@@"
+
+if test "@@ERIS_DEBUG_DISPLAY@@" = "1"
+then
+	echo "candidate_partition=${candidate_partition}"
+	echo "boot_attempts=${boot_attempts}"
+	echo "rollback_level=${rollback_level}"
+	echo "initramfs_size=${initramfs_size}"
+	echo "ready_to_boot=${ready_to_boot}"
+	echo "fdt_mode=@@ERIS_FDT_MODE@@"
+	echo "fdt_addr=${@@ERIS_FDT_ADDR_VAR@@}"
+	echo "bootargs=${bootargs}"
+	echo "boot_on_ramfs=${boot_on_ramfs}"
+fi
 
 # Go!
 #
-@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} - ${@@ERIS_FDT_ADDR_VAR@@}
-	
+if test "${ready_to_boot}" != "0"
+then
+	if test "@@ERIS_FDT_MODE@@" != "none"
+	then
+		@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} ${boot_on_ramfs} ${@@ERIS_FDT_ADDR_VAR@@}
+	else
+		@@ERIS_BOOT_COMMAND@@ ${kernel_addr_r} ${boot_on_ramfs}
+	fi
+fi
+
+echo "Eris Linux: fatal boot error"
+echo "System halted in U-Boot"
+while test 1 -eq 1
+do
+	sleep 1
+done
