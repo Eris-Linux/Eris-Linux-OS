@@ -40,11 +40,9 @@ do_install() {
 	echo "ERIS_STORAGE_DEVICE=/dev/mmcblk0"  > ${D}${datadir}/eris-linux/partitions
 	echo "ERIS_PARTITION_SEPARATOR=p"       >> ${D}${datadir}/eris-linux/partitions
 	echo "ERIS_PARTITION_BOOT=1"            >> ${D}${datadir}/eris-linux/partitions
-	echo "ERIS_PARTITION_SYSTEM_R=2"        >> ${D}${datadir}/eris-linux/partitions
-	echo "ERIS_PARTITION_SYSTEM_A=3"        >> ${D}${datadir}/eris-linux/partitions
-	echo "ERIS_PARTITION_EXTENDED=4"        >> ${D}${datadir}/eris-linux/partitions
-	echo "ERIS_PARTITION_SYSTEM_B=5"        >> ${D}${datadir}/eris-linux/partitions
-	echo "ERIS_PARTITION_DATA=6"            >> ${D}${datadir}/eris-linux/partitions
+	echo "ERIS_PARTITION_SYSTEM_A=2"        >> ${D}${datadir}/eris-linux/partitions
+	echo "ERIS_PARTITION_SYSTEM_B=3"        >> ${D}${datadir}/eris-linux/partitions
+	echo "ERIS_PARTITION_DATA=4"            >> ${D}${datadir}/eris-linux/partitions
 }
 
 FILES:${PN} += "${datadir}/eris-linux/machine"
