@@ -21,8 +21,8 @@ INC = liberis.h      \
   update-api-test.h  \
   wdog-api-test.h    \
 
-CFLAGS  += -Wall -g
-LDLIBS  += -leris
+CFLAGS  += -Wall -g -Iliberis/include
+LDLIBS  += -leris -L. -lcurl
 
 all: $(APP)
 
