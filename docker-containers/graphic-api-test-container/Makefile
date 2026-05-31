@@ -13,15 +13,22 @@ OBJS=                     \
   watchdog-api-window.o   \
 
 
-LDFLAGS=$(shell pkg-config --libs Qt6Widgets)
-CXXFLAGS=$(shell pkg-config --cflags Qt6Widgets)
+CXXFLAGS += -Wall -Wextra -Os
+CXXFLAGS += $(shell pkg-config --cflags Qt6Widgets)
+CXXFLAGS += -Iliberis/include
+
+LDFLAGS += -L.
+
+LDLIBS += -leris
+LDLIBS += $(shell pkg-config --libs Qt6Widgets)
+LDLIBS += -lcurl
 
 .PHONY: all
 
 all: $(EXE)
 
 $(EXE): $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ -leris
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 %o: %cpp
 	$(CXX) -c $(CXXFLAGS) $<
