@@ -14,10 +14,12 @@ MIN_SLOT_NUMBER=1
 MAX_SLOT_NUMBER=4
 
 X11_OPT="-e DISPLAY=:0 -v /tmp/.X11-unix:/tmp/.X11-unix"
-QT6_OPT="-v /usr/lib/:/qt-usr-lib:ro -e QT_QPA_PLATFORM_PLUGIN_PATH=/qt-usr-lib/plugins/platforms"
-GCC_OPT="-v /lib:/gcclib:ro"
-LIB_OPT="-e LD_LIBRARY_PATH=/qt-usr-lib:/gcclib"
-FONT_OPT="-v /etc/fonts:/etc/fonts:ro -v /usr/share/fonts:/usr/share/fonts:ro"
+
+# The following lines produces a light container with ABI-dependency on Yocto-produced Qt libraries.
+#GCC_OPT="-v /lib:/gcclib:ro"
+#LIB_OPT="-e LD_LIBRARY_PATH=/qt-usr-lib:/gcclib"
+#QT6_OPT="-v /usr/lib/:/qt-usr-lib:ro -e QT_QPA_PLATFORM_PLUGIN_PATH=/qt-usr-lib/plugins/platforms"
+#FONT_OPT="-v /etc/fonts:/etc/fonts:ro -v /usr/share/fonts:/usr/share/fonts:ro"
 
 
 start_container()

@@ -62,7 +62,7 @@ IMAGE_FEATURES += "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', ' x11
 IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', ' xorg-fonts-100dpi', '', d)}"
 IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', ' eris-dashboard', '', d)}"
 IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', ' xsetroot', '', d)}"
-IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', ' qtbase', '', d)}"
+#IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-graphic', ' qtbase', '', d)}"
 
 # Containers and virtualization
 #
