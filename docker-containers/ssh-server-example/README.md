@@ -34,17 +34,17 @@ the Eris Linux containers package.
 
 Connect to your account on the [Eris Linux Device Manager](https://www.eris-linux.net).
 
-Go to `My containers` tab and click on `Upload a container` button to upload
-your container. You may enter a password if you want to crypt the container
-before it is stored on Eris Linux server.
+Go to `My containers` tab and click on the `Upload a container` button to
+upload your container. You may enter a password if you want to encrypt the
+container before it is stored on Eris Linux server.
 
-After container upload, click on "Setup..." button. then fill some fields.
+After container upload, click on "Setup..." button. Then fill in some fields.
 
 The `Compatible board` field with the type of board on which you'll use the
 container,
 
-The `Exported Ports` with `<external>:22/tcp`, with `<external>` being the
-external port on which the container will be reachable.
+Fill The `Exported Ports` with `<external>:22/tcp`, with `<external>` being
+the external port on which the container will be reachable.
 
 Go to `My devices` tab, select the group of devices on which you want to
 install the container. On the upper right table, click on the rightmost
@@ -60,5 +60,6 @@ $ ssh  - p <external>  eris@<ip address>
 With `<ip address>` being the address on wich the device is reachable on
 the local subnet.
 
-For more information, see Eris Linux documentation at [www.eris-linux.net](https://www-eris-linux.net).
+For more information, see Eris Linux documentation at
+[www.eris-linux.net](https://www.eris-linux.net).
 
