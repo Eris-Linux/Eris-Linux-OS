@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# Script to create a Docker container for the Eris Linux platform.
+#
+# Christophe BLAESS 2026.
+#
+
+
+if [ $# -ne 3 ]
+then
+	echo "Usage: $0 <architecture> <directory> <container-name>" >&2
+	exit 1
+fi
+
+
+# First argument: the target architecture. Most of the time it will be 'arm', or 'arm64'.
+#
+architecture="${1}"
+if [ "${architecture}" != "arm" ] && [ "${architecture}" != "arm64" ]
+then
+	echo "$0: <architecture> must be 'arm' or 'arm64'." >&2
+	exit 1
+fi
+
+
+# Second argument: the directory containing the Dockerfile (and all other files) of the container.
+#
+directory="${2}"
+if [ ! -d "${directory}" ] || [ ! -e "${directory}/Dockerfile" ]
+then
+	echo "$0: <directory> is not a container directory." >&2
+	exit 1
+fi
+previous_directory=$(pwd)
+cd "${directory}" || { echo "$0: unable to enter ${directory}" >&2; exit 1; }
+
+
+# Third argument: the name of the container (not really important for Eris Linux).
+#
+name="${3}"
+if ! echo "${name}" | grep '^[A-Za-z0-9_.+-]\+$' >/dev/null 2>&1
+then
+	echo "$0: '${name}' is not a valid container name." >&2
+	exit 1
+fi
+
+
+# Remove previous Eris Linux container and image.
+#
+docker container rm -f "eris-linux-container"  2>/dev/null
+docker image     rm -f "eris-linux-image"      2>/dev/null
+rm -f eris-linux-container.tar eris-linux-container.sha256 eris-linux-container.cmd eris-linux-container+sum.tar.bz2
+
+
+# Build the image and extract it as a tar achive.
+#
+docker buildx build --platform linux/"${architecture}" --no-cache --debug --rm -t "eris-linux-image" --output type=tar,dest=eris-linux-container.tar . || exit 1
+
+
+# Extract the "CMD" line of the Dockerfile.
+#
+sed -ne 's/^.*CMD[[:blank:]]*\[\(.*\)\]$/\1/p' Dockerfile | sed -e 's/"\([^"]*\)",\?[[:blank:]]*/\1 /g' > eris-linux-container.cmd
+
+
+# Compute the checksum of the image and the command to run.
+#
+sha256sum eris-linux-container.tar eris-linux-container.cmd > eris-linux-container.sha256
+
+
+# Gather the container, the command and the checksum in a tar archive.
+#
+tar -cjf eris-linux-container+sum.tar.bz2  eris-linux-container.tar eris-linux-container.cmd eris-linux-container.sha256 || exit 1
+
+
+# Move the producted image and erase the temporary files.
+#
+mv "eris-linux-container+sum.tar.bz2" "${previous_directory}/${name}.tar.bz2"
+rm -f eris-linux-container.tar eris-linux-container.sha256 eris-linux-container.cmd eris-linux-container+sum.tar.bz2
+cd -
+
+exit 0
+
