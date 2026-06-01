@@ -2,20 +2,19 @@
 
 ARG ALPINE_VERSION=3.22
 
-FROM --platform=$TARGETPLATFORM alpine:${ALPINE_VERSION} AS build
+FROM  alpine:${ALPINE_VERSION} AS build
 
 RUN apk add --no-cache build-base file
 
 WORKDIR /src
-COPY hello-world.c .
 
-RUN gcc -Wall -Wextra -Os -o /hello-world hello-world.c \
- && strip /hello-world \
- && file /hello-world
+COPY hello-world.c Makefile .
 
-FROM --platform=$TARGETPLATFORM alpine:${ALPINE_VERSION}
+RUN make
 
-COPY --from=build /hello-world /hello-world
+FROM alpine:${ALPINE_VERSION}
+
+COPY --from=build /src/hello-world /hello-world
 
 CMD ["/hello-world"]
 
