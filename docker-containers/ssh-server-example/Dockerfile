@@ -6,7 +6,7 @@ RUN apk update                                                   \
  && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config           \
  && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config    \
  && adduser -D eris                                              \
- && echo "root:root" | chpasswd                                  \
+ && echo "root:root"  | chpasswd                                 \
  && echo "eris:linux" | chpasswd
 
 EXPOSE 22
