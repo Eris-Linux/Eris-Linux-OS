@@ -2,9 +2,9 @@ SUMMARY = "Ersi API library"
 DESCRIPTION = "This shared library is used inside the containers to access Eris API"
 LICENSE = "CLOSED"
 
-SRC_URI = "file://${BPN}.c \
-           file://${BPN}.h \
-           file://Makefile"
+SRC_URI = "git://github.com/Eris-Linux/liberis.git;protocol=https;branch=master"
+PV = "1.0+git${SRCPV}"
+SRCREV = "eaf8f94db1504611a249f1ff8ed13dbc6aed5842"
 
 DEPENDS += "curl"
 
@@ -23,15 +23,9 @@ do_install() {
 	install -m 0644 ${PN}.h ${D}${includedir}/
 }
 
-# Définir les paquets
-# - ${PN} : binaire/runtime (libexample.so.1.0, etc.)
-# - ${PN}-dev : fichiers de dev (headers, symlink libexample.so)
 FILES:${PN} = "${libdir}/${PN}.so.*"
 FILES:${PN}-dev = "${includedir} \
                    ${libdir}/${PN}.so*"
 
-# Pour que le SDK contienne les dev files
-#RDEPENDS:${PN}-dev += "${PN}"
-
-# On sépare bien le runtime et le dev
 INSANE_SKIP:${PN} = "dev-so"
+
