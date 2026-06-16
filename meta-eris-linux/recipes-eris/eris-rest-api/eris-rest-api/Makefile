@@ -10,16 +10,16 @@ LDFLAGS += -pthread -g
 LIBS += -lgpiod -lmicrohttpd -luuid
 
 EXE = eris-rest-api
-OBJS =                 \
-    addsnprintf.o      \
-    eris-rest-api.o    \
-    gpio-rest-api.o    \
-    net-rest-api.o     \
-    sbom-rest-api.o    \
-    system-rest-api.o  \
-    time-rest-api.o    \
-    update-rest-api.o  \
-    wdog-rest-api.o    \
+OBJS =                     \
+    addsnprintf.o          \
+    eris-rest-api.o        \
+    gpio-rest-api.o        \
+    net-rest-api.o         \
+    sbom-rest-api.o        \
+    system-rest-api.o      \
+    time-rest-api.o        \
+    update-rest-api.o      \
+    watchdog-rest-api.o    \
 
 INC =
 

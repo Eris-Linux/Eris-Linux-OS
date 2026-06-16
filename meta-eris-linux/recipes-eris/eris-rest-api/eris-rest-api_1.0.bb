@@ -18,8 +18,8 @@ SRC_URI="                    \
   file://time-rest-api.h     \
   file://update-rest-api.c   \
   file://update-rest-api.h   \
-  file://wdog-rest-api.c     \
-  file://wdog-rest-api.h     \
+  file://watchdog-rest-api.c \
+  file://watchdog-rest-api.h \
   file://Makefile            \
   file://start-${BPN}        \
   file://${BPN}.service      \

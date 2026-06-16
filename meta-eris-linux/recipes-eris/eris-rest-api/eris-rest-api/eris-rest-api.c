@@ -22,7 +22,7 @@
 #include "system-rest-api.h"
 #include "time-rest-api.h"
 #include "update-rest-api.h"
-#include "wdog-rest-api.h"
+#include "watchdog-rest-api.h"
 
 
 // ---------------------- Private macros declarations.
@@ -216,7 +216,7 @@ static enum MHD_Result eris_rest_api_handler(
 		return update_rest_api(connection, url, method);
 
 	if (strncasecmp(url, "/api/watchdog", 13) == 0)
-		return wdog_rest_api(connection, url, method);
+		return watchdog_rest_api(connection, url, method);
 
 	return MHD_NO;
 }
@@ -243,7 +243,7 @@ static int eris_rest_api_init(int argc, char *argv[])
 	if (init_update_rest_api(argv[0]) != 0)
 		return -1;
 
-	if (init_wdog_rest_api(argv[0]) != 0)
+	if (init_watchdog_rest_api(argv[0]) != 0)
 		return -1;
 
 	return 0;
