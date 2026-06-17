@@ -200,6 +200,17 @@ static enum MHD_Result eris_rest_api_handler(
 	if (strncmp(url, "/api/contact", 12) == 0)
 		return contact_rest_api(connection, url, method);
 
+	if (strncmp(url, "/api/reboot", 11) == 0)
+		return reboot_rest_api(connection, url, method);
+
+	if (strncmp(url, "/api/time", 9) == 0)
+		return time_rest_api(connection, url, method);
+
+	if (strncmp(url, "/api/watchdog", 13) == 0)
+		return watchdog_rest_api(connection, url, method);
+
+
+
 	if (strncmp(url, "/api/gpio", 9) == 0)
 		return gpio_rest_api(connection, url, method);
 
@@ -210,21 +221,12 @@ static enum MHD_Result eris_rest_api_handler(
 	 || (strncmp(url, "/api/license", 12) == 0))
 		return sbom_rest_api(connection, url, method);
 
-	if (strncmp(url, "/api/reboot", 11) == 0)
-		return reboot_rest_api(connection, url, method);
-
 	if ((strncmp(url, "/api/system", 11) == 0)
 	 || (strncmp(url, "/api/container", 14) == 0))
 		return system_rest_api(connection, url, method);
 
-	if (strncmp(url, "/api/time", 9) == 0)
-		return time_rest_api(connection, url, method);
-
 	if (strncmp(url, "/api/update", 11) == 0)
 		return update_rest_api(connection, url, method);
-
-	if (strncmp(url, "/api/watchdog", 13) == 0)
-		return watchdog_rest_api(connection, url, method);
 
 	return MHD_NO;
 }
@@ -236,13 +238,22 @@ static int eris_rest_api_init(int argc, char *argv[])
 	if (init_contact_rest_api(argv[0]) != 0)
 		return -1;
 
+	if (init_reboot_rest_api(argv[0]) != 0)
+		return -1;
+
+	if (init_time_rest_api(argv[0]) != 0)
+		return -1;
+
+	if (init_watchdog_rest_api(argv[0]) != 0)
+		return -1;
+
+
+
+
 	if (init_gpio_rest_api(argv[0]) != 0)
 		return -1;
 
 	if (init_net_rest_api(argv[0]) != 0)
-		return -1;
-
-	if (init_reboot_rest_api(argv[0]) != 0)
 		return -1;
 
 	if (init_sbom_rest_api(argv[0]) != 0)
@@ -251,13 +262,7 @@ static int eris_rest_api_init(int argc, char *argv[])
 	if (init_system_rest_api(argv[0]) != 0)
 		return -1;
 
-	if (init_time_rest_api(argv[0]) != 0)
-		return -1;
-
 	if (init_update_rest_api(argv[0]) != 0)
-		return -1;
-
-	if (init_watchdog_rest_api(argv[0]) != 0)
 		return -1;
 
 	return 0;

@@ -43,6 +43,7 @@ static enum MHD_Result put_time_system     (struct MHD_Connection *connection);
 static void read_time_zone_list(void);
 static void set_rtc_time(struct tm *tm);
 
+
 // ---------------------- Private variables.
 
 static char **tz_names = NULL;
@@ -59,13 +60,13 @@ int init_time_rest_api(const char *app)
 
 	read_time_zone_list();
 
-	if (read_parameter_value(TIME_ZONE_PREFIX, &tz) == 0) {
+	if ((read_parameter_value(TIME_ZONE_PREFIX, &tz) == 0) && (tz != NULL)) {
 		setenv("TZ", tz, 1);
 		free(tz);
 	} else {
 		setenv("TZ", "UTC", 1);
 	}
-
+	tzset();
 	return 0;
 }
 
@@ -73,38 +74,44 @@ int init_time_rest_api(const char *app)
 
 enum MHD_Result time_rest_api(struct MHD_Connection *connection, const char *url, const char *method)
 {
-	if (strcasecmp(url, "/api/time/ntp/server") == 0) {
+	if (strcmp(url, "/api/time/ntp/server") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_time_ntp_server(connection);
 		if (strcmp(method, "PUT") == 0)
 			return put_time_ntp_server(connection);
 	}
-	if (strcasecmp(url, "/api/time/ntp") == 0) {
+
+	if (strcmp(url, "/api/time/ntp") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_time_ntp(connection);
 		if (strcmp(method, "PUT") == 0)
 			return put_time_ntp(connection);
 	}
-	if (strcasecmp(url, "/api/time/zone/list") == 0) {
+
+	if (strcmp(url, "/api/time/zone/list") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_time_zone_list(connection);
 	}
-	if (strcasecmp(url, "/api/time/zone") == 0) {
+
+	if (strcmp(url, "/api/time/zone") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_time_zone(connection);
 		if (strcmp(method, "PUT") == 0)
 			return put_time_zone(connection);
 	}
-	if (strcasecmp(url, "/api/time/local") == 0) {
+
+	if (strcmp(url, "/api/time/local") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_time_local(connection);
 	}
-	if (strcasecmp(url, "/api/time/system") == 0) {
+
+	if (strcmp(url, "/api/time/system") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_time_system(connection);
 		if (strcmp(method, "PUT") == 0)
 			return put_time_system(connection);
 	}
+
 	return MHD_NO;
 }
 
@@ -114,12 +121,15 @@ enum MHD_Result time_rest_api(struct MHD_Connection *connection, const char *url
 static enum MHD_Result read_and_send_value(struct MHD_Connection *connection, const char *parameter)
 {
 	char *reply = NULL;
-
 	if (read_parameter_value(parameter, &reply) != 0)
 		return send_rest_error(connection, "Unable to read internal parameter.", 500);
 
+	if (reply == NULL)
+		return send_rest_response(connection, "");
+
 	int ret = send_rest_response(connection, reply);
 	free(reply);
+
 	return ret;
 }
 
@@ -127,9 +137,9 @@ static enum MHD_Result read_and_send_value(struct MHD_Connection *connection, co
 
 static enum MHD_Result store_received_value(struct MHD_Connection *connection, const char *parameter, const char *value)
 {
-	if (write_parameter_value(parameter, value) != 0) {
+	if (write_parameter_value(parameter, value) != 0)
 		return send_rest_error(connection, "Unable to store internal parameter.", 500);
-	}
+
 	return send_rest_response(connection, "Ok");
 }
 
@@ -145,19 +155,26 @@ static enum MHD_Result get_time_ntp_server(struct MHD_Connection *connection)
 static enum MHD_Result put_time_ntp_server(struct MHD_Connection *connection)
 {
 	const char *name = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "server");
-	if (name == NULL)
-	        return send_rest_error(connection, "Missing server name.", 400);
+	if ((name == NULL) || (name[0] == '\0'))
+		return send_rest_error(connection, "Missing server name.", 400);
 
 	for (int i = 0; name[i] != '\0'; i++) {
-		if (isalnum(name[i]))
+
+		if (i > 253)
+			return send_rest_error(connection, "Invalid NTP server name.", 400);
+
+		if (isalnum((unsigned char)(name[i])))
 			continue;
+
 		if ((name[i] == '.')
 		 || (name[i] == ':')
 		 || (name[i] == '-')
 		 || (name[i] == '_'))
 			continue;
+
 		return send_rest_error(connection, "NTP server must be a string of letters, digits or .:-_.", 400);
 	}
+
 	return store_received_value(connection, NTP_SERVER_PREFIX, name);
 }
 
@@ -175,18 +192,21 @@ static enum MHD_Result put_time_ntp(struct MHD_Connection *connection)
 	const char *status = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "status");
 	if (status == NULL)
 	        return send_rest_error(connection, "Missing NTP status.", 400);
-	if ((strcasecmp(status, "yes") != 0) && (strcasecmp(status, "no") != 0)) {
-	        return send_rest_error(connection, "NTP status must be 'yes' or 'no'.", 400);
-	}
-	return store_received_value(connection, NTP_ENABLE_PREFIX, status);
+
+	if (strcasecmp(status, "yes") == 0)
+		return store_received_value(connection, NTP_ENABLE_PREFIX, "yes");
+
+	if (strcasecmp(status, "no") == 0)
+		return store_received_value(connection, NTP_ENABLE_PREFIX, "no");
+
+        return send_rest_error(connection, "NTP status must be 'yes' or 'no'.", 400);
 }
 
 
 
 static void add_time_zone(const char *group, const char *zone)
 {
-	static char **new_tz_names;
-
+	char **new_tz_names;
 	new_tz_names = realloc(tz_names, (nb_tz_names + 1) * sizeof(char *));
 	if (new_tz_names == NULL)
 		return;
@@ -195,20 +215,31 @@ static void add_time_zone(const char *group, const char *zone)
 	if (group != NULL) {
 		tz_names[nb_tz_names] = malloc(strlen(group) + 1 + strlen(zone) + 1);
 		if (tz_names[nb_tz_names] != NULL)
-			sprintf(tz_names[nb_tz_names], "%s/%s", group, zone);
+			sprintf(tz_names[nb_tz_names ++], "%s/%s", group, zone);
 	} else {
 		tz_names[nb_tz_names] = malloc(strlen(zone) + 1);
 		if (tz_names[nb_tz_names] != NULL)
-			sprintf(tz_names[nb_tz_names], "%s", zone);
+			sprintf(tz_names[nb_tz_names ++], "%s", zone);
 	}
-	nb_tz_names ++;
 }
 
 
 
 static int compare_tz(const void *tz1, const void *tz2)
 {
-	return strcmp(*(const char **)tz1, *(const char **)tz2);
+	const char *a = (const char *) tz1;
+	const char *b = (const char *) tz2;
+
+	if ((a == NULL) && (b == NULL))
+		return 0;
+
+	if (a == NULL)
+		return 1;
+
+	if (b == NULL)
+		return -1;
+
+	return strcmp(a, b);
 }
 
 
@@ -229,17 +260,22 @@ static void read_time_zone_list(void)
 		return;
 
 	while ((entry = readdir(dir)) != NULL) {
+
 		if ((! isalpha(entry->d_name[0]))
 		 || (! isupper(entry->d_name[0])))
 			continue;
+
 		if (entry->d_type == DT_REG) {
 			add_time_zone(NULL, entry->d_name);
 			continue;
 		}
+
 		if (entry->d_type == DT_DIR) {
 			snprintf(dirname, 1023, "%s/%s", TIME_ZONE_PATH, entry->d_name);
 			dirname[1023] = '\0';
 			subdir = opendir(dirname);
+			if (subdir == NULL)
+				continue;
 			while ((subentry = readdir(subdir)) != NULL) {
 				if ((! isalpha(subentry->d_name[0]))
 				 || (! isupper(subentry->d_name[0])))
@@ -297,7 +333,7 @@ static enum MHD_Result put_time_zone(struct MHD_Connection *connection)
 
 	for (int i = 0; i < nb_tz_names; i++) {
 		if (tz_names[i] != NULL) {
-			if (strcasecmp(tz_names[i], name) == 0) {
+			if (strcmp(tz_names[i], name) == 0) {
 				setenv("TZ", tz_names[i], 1);
 				return store_received_value(connection, TIME_ZONE_PREFIX, tz_names[i]);
 			}
@@ -311,17 +347,20 @@ static enum MHD_Result put_time_zone(struct MHD_Connection *connection)
 static enum MHD_Result get_time_local(struct MHD_Connection *connection)
 {
 	struct timeval tv;
-	gettimeofday(&tv, NULL);
+	if (gettimeofday(&tv, NULL) != 0)
+		return send_rest_error(connection, "Unable to read local time.", 500);
 
-	struct tm *t = localtime(&(tv.tv_sec));
+	struct tm t;
+	if (localtime_r(&(tv.tv_sec), &t) == NULL)
+		return send_rest_error(connection, "Unable to convert local time.", 500);
 
 	char reply[128];
-	snprintf(reply, 128, "%04d-%02d-%02d %02d:%02d:%02d:%06ld",
-		t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-		t->tm_hour, t->tm_min, t->tm_sec,
+	snprintf(reply, sizeof(reply), "%04d-%02d-%02d %02d:%02d:%02d:%06ld",
+		t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+		t.tm_hour, t.tm_min, t.tm_sec,
 		tv.tv_usec);
-	int ret = send_rest_response(connection, reply);
-	return ret;
+
+	return send_rest_response(connection, reply);
 }
 
 
@@ -329,17 +368,20 @@ static enum MHD_Result get_time_local(struct MHD_Connection *connection)
 static enum MHD_Result get_time_system(struct MHD_Connection *connection)
 {
 	struct timeval tv;
-	gettimeofday(&tv, NULL);
+	if (gettimeofday(&tv, NULL) != 0)
+		return send_rest_error(connection, "Unable to read system time.", 500);
 
-	struct tm *t = gmtime(&(tv.tv_sec));
+	struct tm t;
+	if (gmtime_r(&(tv.tv_sec), &t) == NULL)
+		return send_rest_error(connection, "Unable to convert system time.", 500);
+
 	char reply[128];
-
 	snprintf(reply, 128, "%04d-%02d-%02d %02d:%02d:%02d:%06ld",
-		t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-		t->tm_hour, t->tm_min, t->tm_sec,
+		t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+		t.tm_hour, t.tm_min, t.tm_sec,
 		tv.tv_usec);
-	int ret = send_rest_response(connection, reply);
-	return ret;
+
+	return send_rest_response(connection, reply);
 }
 
 
@@ -360,6 +402,7 @@ static enum MHD_Result put_time_system(struct MHD_Connection *connection)
 	 && (sscanf(timestr, "%d:%d:%d:%d:%d:%d", &(tm.tm_year), &(tm.tm_mon), &(tm.tm_mday), &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 6)) {
 		return send_rest_error(connection, "Wrong time format (must be yyyy/mm/ddThh:mm:ss).", 400);
 	}
+
 	if ((tm.tm_year < 1970) || (tm.tm_year > 2999)) {
 		return send_rest_error(connection, "Wrong year value (must be between 1970 and 2999).", 400);
 	}
@@ -382,27 +425,15 @@ static enum MHD_Result put_time_system(struct MHD_Connection *connection)
 	}
 
 	struct timeval tv;
-	memset(&tv, 0, sizeof(tv));
+	tv.tv_sec = timegm(&tm);
+	tv.tv_usec = 0;
+	if (tv.tv_sec == (time_t) -1)
+		return send_rest_error(connection, "Wrong date.", 400);
 
-	char timezone[64];
-	memset(timezone, 0, 64);
+	if (settimeofday(&tv, NULL) != 0)
+		return send_rest_error(connection, "Unable to program system time.", 500);
 
-	char *ptr = getenv("TZ");
-	if (ptr != NULL)
-		strncpy(timezone, ptr, 63);
-
-	unsetenv("TZ");
-	tv.tv_sec = mktime(&tm);
-
-	if (timezone[0] != '\0')
-		setenv("TZ", timezone, 1);
-
-	if (tv.tv_sec == (time_t) -1) {
-	        return send_rest_error(connection, "Wrong date.", 400);
-	}
-
-	settimeofday(&tv, NULL);
-	set_rtc_time(&tm);
+	set_rtc_time(&tm); // Don't handle any error, RTC may be missing on an embedded board.
 
 	return send_rest_response(connection, "Ok");
 }
@@ -427,5 +458,7 @@ static void set_rtc_time(struct tm *tm)
 	rtm.tm_year = tm->tm_year;
 
 	ioctl(fd, RTC_SET_TIME, &rtm);
+
 	close(fd);
 }
+
