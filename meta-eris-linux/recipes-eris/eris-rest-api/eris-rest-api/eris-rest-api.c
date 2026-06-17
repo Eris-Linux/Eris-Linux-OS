@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "addsnprintf.h"
+#include "contact-rest-api.h"
 #include "eris-rest-api.h"
 #include "gpio-rest-api.h"
 #include "net-rest-api.h"
@@ -228,6 +229,9 @@ static enum MHD_Result eris_rest_api_handler(
 
 static int eris_rest_api_init(int argc, char *argv[])
 {
+	if (init_contact_rest_api(argv[0]) != 0)
+		return -1;
+
 	if (init_gpio_rest_api(argv[0]) != 0)
 		return -1;
 
@@ -260,6 +264,7 @@ static enum MHD_Result eris_rest_api(struct MHD_Connection *connection, const ch
 		char * message =
 			"Welcome on the Eris-Linux REST API.\n"
 			"Here are some API modules endpoints:\n"
+			"  /api/contact    parameters to contact the device manager,\n"
 			"  /api/gpio       access to GPIO-based features,\n"
 			"  /api/network    access to network setup functions,\n"
 			"  /api/package    access to package versions and licenses,\n"

@@ -4,6 +4,8 @@ LICENSE = "CLOSED"
 SRC_URI="                    \
   file://addsnprintf.c       \
   file://addsnprintf.h       \
+  file://contact-rest-api.c  \
+  file://contact-rest-api.h  \
   file://eris-rest-api.c     \
   file://eris-rest-api.h     \
   file://gpio-rest-api.c     \

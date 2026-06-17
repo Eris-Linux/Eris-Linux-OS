@@ -23,6 +23,8 @@ externalDocs:
   description: Eris Linux system documentation.
   url: https://www.eris-linux.net/documentation.html
 tags:
+  - name: Contact
+    description: Periodic contact between the embedded system and the device manager.
   - name: Containers
     description: Docker container related operations.
   - name: Packages
@@ -40,6 +42,11 @@ tags:
   - name: Watchdog
     description: Watchdog related operations.
 paths:
+  /api/contact/now:
+    $ref: './paths/contact.yaml#/now'
+  /api/contact/period:
+    $ref: './paths/contact.yaml#/period'
+
   /api/container/presence:
     $ref: './paths/container.yaml#/presence'
   /api/container/name:
@@ -98,10 +105,6 @@ paths:
   /api/time/system:
     $ref: './paths/time.yaml#/system'
 
-  /api/update/contact/now:
-    $ref: './paths/update.yaml#/contact-now'
-  /api/update/contact/period:
-    $ref: './paths/update.yaml#/contact-period'
   /api/update/container/policy:
     $ref: './paths/update.yaml#/container-policy'
   /api/update/factory:

@@ -1,0 +1,59 @@
+period:
+  get:
+    summary: Get period between contacts to the Eris Linux server.
+    tags: [ Contact ]
+    responses:
+      '200':
+        description: The period in seconds between two contacts with Eris Linux server.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set period in seconds between contacts to the Eris Linux server.
+    tags: [ Contact ]
+    parameters:
+      - name: period
+        in: query
+        required: true
+        description: Period in seconds (in [0-86400]), `0` = no automatic contact.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid period (must be in [0-86400]).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal Error
+        content:
+          text/plain:
+            schema:
+              type: string
+
+now:
+  post:
+    summary: Ask the device to contact the server immediatly.
+    tags: [ Contact ]
+    responses:
+      '200':
+        description: Ok.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error when trying to contact the server.
+        content:
+          text/plain:
+            schema:
+              type: string
+
