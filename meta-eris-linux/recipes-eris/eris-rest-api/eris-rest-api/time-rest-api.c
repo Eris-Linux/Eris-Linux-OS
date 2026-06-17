@@ -1,3 +1,11 @@
+/*
+ *  ERIS LINUX API
+ *
+ *  Author: Christophe BLAESS.
+ *
+ *  (C) Logilin 2024-2026. All rights reserved
+ */
+
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>

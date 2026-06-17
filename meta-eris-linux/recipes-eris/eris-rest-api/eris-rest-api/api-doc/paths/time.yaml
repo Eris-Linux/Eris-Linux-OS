@@ -1,3 +1,50 @@
+ntp-server:
+  get:
+    summary: Get the name or IP address of the NTP server.
+    tags: [ Time ]
+    responses:
+      '200':
+        description: Host name or IP address of the NTP server.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+           schema:
+              type: string
+  put:
+    summary: Set the name or IP address of the NTP server.
+    tags: [ Time ]
+    parameters:
+      - name: server
+        in: query
+        required: true
+        description: IP address or hostname of the NTP server.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `server` address parameter.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing Eris Linux parameters.
+        content:
+          text/plain:
+            schema:
+              type: string
+
 ntp:
   get:
     summary: Get the status of the NTP usage.
@@ -45,13 +92,13 @@ ntp:
             schema:
               type: string
 
-ntp-server:
+zone-list:
   get:
-    summary: Get the name or IP address of the NTP server.
+    summary: Get a list of time zone names.
     tags: [ Time ]
     responses:
       '200':
-        description: Host name or IP address of the NTP server.
+        description: Space-separated list of all time zones known by Eris Linux.
         content:
           text/plain:
             schema:
@@ -61,35 +108,6 @@ ntp-server:
         content:
           text/plain:
            schema:
-              type: string
-  put:
-    summary: Set the name or IP address of the NTP server.
-    tags: [ Time ]
-    parameters:
-      - name: server
-        in: query
-        required: true
-        description: IP address or hostname of the NTP server.
-        schema:
-          type: string
-    responses:
-      '200':
-        description: Ok
-        content:
-          text/plain:
-            schema:
-              type: string
-      '400':
-        description: Missing or invalid `server` address parameter.
-        content:
-          text/plain:
-            schema:
-              type: string
-      '500':
-        description: Internal error accessing Eris Linux parameters.
-        content:
-          text/plain:
-            schema:
               type: string
 
 zone:
@@ -139,24 +157,6 @@ zone:
             schema:
               type: string
 
-zone-list:
-  get:
-    summary: Get a list of time zone names.
-    tags: [ Time ]
-    responses:
-      '200':
-        description: Space-separated list of all time zones known by Eris Linux.
-        content:
-          text/plain:
-            schema:
-              type: string
-      '500':
-        description: Internal error accessing Eris Linux parameters.
-        content:
-          text/plain:
-           schema:
-              type: string
-
 local:
   get:
     summary: Get the local time (using local time zone).
@@ -164,6 +164,12 @@ local:
     responses:
       '200':
         description: Local time in format `YYYY-MM-DD hh:mm:ss:uuuuuu`
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error reading or converting local time.
         content:
           text/plain:
             schema:
@@ -176,6 +182,12 @@ system:
     responses:
       '200':
         description: System UTC time in format `YYYY-MM-DD hh:mm:ss:uuuuuu`
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error reading or converting sytem time.
         content:
           text/plain:
             schema:
@@ -203,3 +215,10 @@ system:
           text/plain:
             schema:
               type: string
+      '500':
+        description: Internal error writing system time.
+        content:
+          text/plain:
+            schema:
+              type: string
+

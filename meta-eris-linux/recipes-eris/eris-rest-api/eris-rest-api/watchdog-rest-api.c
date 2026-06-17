@@ -1,8 +1,9 @@
 /*
- *  ERIS LINUX REST API
+ *  ERIS LINUX API
  *
- *  (c) 2024-2026: Logilin
- *  All rights reserved
+ *  Author: Christophe BLAESS.
+ *
+ *  (C) Logilin 2024-2026. All rights reserved
  */
 
 #include <errno.h>

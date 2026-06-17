@@ -25,6 +25,13 @@ externalDocs:
 tags:
   - name: Contact
     description: Periodic contact between the embedded system and the device manager.
+  - name: Reboot
+    description: System restart related features.
+  - name: Time
+    description: Time, NTP and time zone related methods.
+  - name: Watchdog
+    description: Watchdog related operations.
+
   - name: Containers
     description: Docker container related operations.
   - name: Packages
@@ -33,21 +40,47 @@ tags:
     description: Open Source licenses present on Eris Linux system.
   - name: Network
     description: Network interfaces status and setup.
-  - name: Reboot
-    description: System restart related features.
   - name: System
     description: System related information.
-  - name: Time
-    description: Time, NTP and time zone related methods.
   - name: Update
     description: Update system and device manager communication.
-  - name: Watchdog
-    description: Watchdog related operations.
 paths:
   /api/contact/now:
     $ref: './paths/contact.yaml#/now'
   /api/contact/period:
     $ref: './paths/contact.yaml#/period'
+
+  /api/reboot/now:
+    $ref: './paths/reboot.yaml#/now'
+  /api/reboot/automatic:
+    $ref: './paths/reboot.yaml#/automatic'
+  /api/reboot/pending:
+    $ref: './paths/reboot.yaml#/pending'
+  /api/reboot/rollback:
+    $ref: './paths/reboot.yaml#/rollback'
+  /api/reboot/factory:
+    $ref: './paths/reboot.yaml#/factory'
+
+  /api/time/ntp/server:
+    $ref: './paths/time.yaml#/ntp-server'
+  /api/time/ntp:
+    $ref: './paths/time.yaml#/ntp'
+  /api/time/zone/list:
+    $ref: './paths/time.yaml#/zone-list'
+  /api/time/zone:
+    $ref: './paths/time.yaml#/zone'
+  /api/time/local:
+    $ref: './paths/time.yaml#/local'
+  /api/time/system:
+    $ref: './paths/time.yaml#/system'
+
+  /api/watchdog:
+    $ref: './paths/watchdog.yaml#/watchdog'
+  /api/watchdog/delay:
+    $ref: './paths/watchdog.yaml#/watchdog-delay'
+  /api/watchdog/feeder:
+    $ref: './paths/watchdog.yaml#/watchdog-feeder'
+
 
   /api/container/presence:
     $ref: './paths/container.yaml#/presence'
@@ -85,17 +118,6 @@ paths:
   /api/network/wifi/quality:
     $ref: './paths/network.yaml#/wifi-quality'
 
-  /api/reboot/now:
-    $ref: './paths/reboot.yaml#/now'
-  /api/reboot/automatic:
-    $ref: './paths/reboot.yaml#/automatic'
-  /api/reboot/pending:
-    $ref: './paths/reboot.yaml#/pending'
-  /api/reboot/rollback:
-    $ref: './paths/reboot.yaml#/rollback'
-  /api/reboot/factory:
-    $ref: './paths/reboot.yaml#/factory'
-
   /api/system/model:
     $ref: './paths/system.yaml#/model'
   /api/system/type:
@@ -105,27 +127,8 @@ paths:
   /api/system/version:
     $ref: './paths/system.yaml#/version'
 
-  /api/time/ntp:
-    $ref: './paths/time.yaml#/ntp'
-  /api/time/ntp/server:
-    $ref: './paths/time.yaml#/ntp-server'
-  /api/time/zone:
-    $ref: './paths/time.yaml#/zone'
-  /api/time/zone/list:
-    $ref: './paths/time.yaml#/zone-list'
-  /api/time/local:
-    $ref: './paths/time.yaml#/local'
-  /api/time/system:
-    $ref: './paths/time.yaml#/system'
-
   /api/update/container/policy:
     $ref: './paths/update.yaml#/container-policy'
   /api/update/status:
     $ref: './paths/update.yaml#/status'
 
-  /api/watchdog:
-    $ref: './paths/watchdog.yaml#/watchdog'
-  /api/watchdog/delay:
-    $ref: './paths/watchdog.yaml#/watchdog-delay'
-  /api/watchdog/feeder:
-    $ref: './paths/watchdog.yaml#/watchdog-feeder'
