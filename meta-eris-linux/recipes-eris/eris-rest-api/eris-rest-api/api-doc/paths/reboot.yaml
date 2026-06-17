@@ -1,0 +1,124 @@
+now:
+  post:
+    summary: Force a system reboot as soon as possible.
+    tags: [ Reboot ]
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error when trying to reboot the system.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+pending:
+  get:
+    summary: Is there a system reboot pending?
+    tags: [ Reboot ]
+    responses:
+      '200':
+        description: Return `yes` if a pending reboot is programmed, `no` otherwise.
+        content:
+          text/plain:
+            schema:
+              type: string
+  post:
+    summary: Program or remove a pending reboot.
+    tags: [ Reboot ]
+    parameters:
+      - name: reboot
+        in: query
+        required: true
+        description: Program (`yes`) a system reboot or cancel (`no`) any pending reboot.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `reboot` parameter (must be `yes` or `no`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Unable to program or cancel a reboot.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+automatic:
+  get:
+    summary: Should the system reboot automatically after an update?
+    tags: [ Reboot ]
+    responses:
+      '200':
+        description: Whether (`yes` or `no`) the system reboots automatically after a Eris Linux update.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Indicates if the system must reboot automatically after update.
+    tags: [ Reboot ]
+    parameters:
+      - name: auto
+        in: query
+        required: true
+        description: Automatic reboot after a system update (`yes` or `no`).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid `auto` parameter (must be `yes` or `no`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal Error
+        content:
+          text/plain:
+            schema:
+              type: string
+
+rollback:
+  post:
+    summary: Force a system rollback to previous version at next reboot.
+    tags: [ Reboot ]
+    responses:
+      '501':
+        description: Not implemented.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+factory:
+  post:
+    summary: Return the device to factory preset at next reboot.
+    tags: [ Reboot ]
+    responses:
+      '501':
+        description: Not implemented yet.
+        content:
+          text/plain:
+            schema:
+              type: string
+
