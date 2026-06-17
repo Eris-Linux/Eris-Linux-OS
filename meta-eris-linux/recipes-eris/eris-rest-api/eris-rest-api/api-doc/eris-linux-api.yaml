@@ -120,6 +120,6 @@ paths:
   /api/watchdog:
     $ref: './paths/watchdog.yaml#/watchdog'
   /api/watchdog/delay:
-    $ref: './paths/watchdog.yaml#/delay'
+    $ref: './paths/watchdog.yaml#/watchdog-delay'
   /api/watchdog/feeder:
-    $ref: './paths/watchdog.yaml#/feeder'
+    $ref: './paths/watchdog.yaml#/watchdog-feeder'

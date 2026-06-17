@@ -32,13 +32,13 @@ watchdog:
             schema:
               type: string
 
-delay:
+watchdog-delay:
   get:
     summary: Get the current delay of the watchdog.
     tags: [ Watchdog ]
     responses:
       '200':
-        description: Delay in seconds of the watchdog.
+        description: Delay of the watchdog in seconds.
         content:
           text/plain:
             schema:
@@ -79,7 +79,7 @@ delay:
             schema:
               type: string
 
-feeder:
+watchdog-feeder:
   get:
     summary: Get the status of the watchdog feeder thread.
     tags: [ Watchdog ]
@@ -102,6 +102,12 @@ feeder:
               type: string
       '400':
         description: Already running.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Thread error..
         content:
           text/plain:
             schema:

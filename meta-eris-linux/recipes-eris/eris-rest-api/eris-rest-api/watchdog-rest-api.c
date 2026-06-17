@@ -210,7 +210,7 @@ static enum MHD_Result post_watchdog_feeder(struct MHD_Connection *connection)
 	if (pthread_create(&_feeder_thread, NULL, _feeder_function, NULL) != 0) {
 		_feeder_running = 0;
 		pthread_mutex_unlock(&_watchdog_mtx);
-		return send_rest_error(connection, "Thread error", 400);
+		return send_rest_error(connection, "Thread error", 500);
 	}
 
 	pthread_mutex_unlock(&_watchdog_mtx);
