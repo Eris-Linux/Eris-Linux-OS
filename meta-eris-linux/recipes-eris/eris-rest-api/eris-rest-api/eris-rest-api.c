@@ -192,30 +192,33 @@ static enum MHD_Result eris_rest_api_handler(
 	(void) upload_data_size;
 	(void) ptr;
 
-	if (strcasecmp(url, "/api") == 0)
+	if (strcmp(url, "/api") == 0)
 		return eris_rest_api(connection, url, method);
 
-	if (strncasecmp(url, "/api/gpio", 9) == 0)
+	if (strncmp(url, "/api/contact", 12) == 0)
+		return contact_rest_api(connection, url, method);
+
+	if (strncmp(url, "/api/gpio", 9) == 0)
 		return gpio_rest_api(connection, url, method);
 
-	if (strncasecmp(url, "/api/network", 12) == 0)
+	if (strncmp(url, "/api/network", 12) == 0)
 		return net_rest_api(connection, url, method);
 
-	if ((strncasecmp(url, "/api/package", 12) == 0)
-	 || (strncasecmp(url, "/api/license", 12) == 0))
+	if ((strncmp(url, "/api/package", 12) == 0)
+	 || (strncmp(url, "/api/license", 12) == 0))
 		return sbom_rest_api(connection, url, method);
 
-	if ((strncasecmp(url, "/api/system", 11) == 0)
-	 || (strncasecmp(url, "/api/container", 14) == 0))
+	if ((strncmp(url, "/api/system", 11) == 0)
+	 || (strncmp(url, "/api/container", 14) == 0))
 		return system_rest_api(connection, url, method);
 
-	if (strncasecmp(url, "/api/time", 9) == 0)
+	if (strncmp(url, "/api/time", 9) == 0)
 		return time_rest_api(connection, url, method);
 
-	if (strncasecmp(url, "/api/update", 11) == 0)
+	if (strncmp(url, "/api/update", 11) == 0)
 		return update_rest_api(connection, url, method);
 
-	if (strncasecmp(url, "/api/watchdog", 13) == 0)
+	if (strncmp(url, "/api/watchdog", 13) == 0)
 		return watchdog_rest_api(connection, url, method);
 
 	return MHD_NO;
