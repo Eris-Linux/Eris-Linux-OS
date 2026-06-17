@@ -16,6 +16,7 @@ OBJS =                     \
     eris-rest-api.o        \
     gpio-rest-api.o        \
     net-rest-api.o         \
+    reboot-rest-api.o      \
     sbom-rest-api.o        \
     system-rest-api.o      \
     time-rest-api.o        \

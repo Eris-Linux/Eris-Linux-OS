@@ -19,6 +19,7 @@
 #include "eris-rest-api.h"
 #include "gpio-rest-api.h"
 #include "net-rest-api.h"
+#include "reboot-rest-api.h"
 #include "sbom-rest-api.h"
 #include "system-rest-api.h"
 #include "time-rest-api.h"
@@ -209,6 +210,9 @@ static enum MHD_Result eris_rest_api_handler(
 	 || (strncmp(url, "/api/license", 12) == 0))
 		return sbom_rest_api(connection, url, method);
 
+	if (strncmp(url, "/api/reboot", 11) == 0)
+		return reboot_rest_api(connection, url, method);
+
 	if ((strncmp(url, "/api/system", 11) == 0)
 	 || (strncmp(url, "/api/container", 14) == 0))
 		return system_rest_api(connection, url, method);
@@ -236,6 +240,9 @@ static int eris_rest_api_init(int argc, char *argv[])
 		return -1;
 
 	if (init_net_rest_api(argv[0]) != 0)
+		return -1;
+
+	if (init_reboot_rest_api(argv[0]) != 0)
 		return -1;
 
 	if (init_sbom_rest_api(argv[0]) != 0)
@@ -269,6 +276,7 @@ static enum MHD_Result eris_rest_api(struct MHD_Connection *connection, const ch
 			"  /api/network    access to network setup functions,\n"
 			"  /api/package    access to package versions and licenses,\n"
 			"  /api/license    access to license texts,\n"
+			"  /api/reboot     restart related features,\n"
 			"  /api/time       access to time-handling features,\n"
 			"  /api/update     access to system and container update parameters,\n"
 			"  /api/watchdog   access to watchdog features,\n"

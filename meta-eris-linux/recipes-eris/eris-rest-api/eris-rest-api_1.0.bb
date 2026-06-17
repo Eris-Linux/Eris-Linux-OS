@@ -12,6 +12,8 @@ SRC_URI="                    \
   file://gpio-rest-api.h     \
   file://net-rest-api.c      \
   file://net-rest-api.h      \
+  file://reboot-rest-api.c   \
+  file://reboot-rest-api.h   \
   file://sbom-rest-api.c     \
   file://sbom-rest-api.h     \
   file://system-rest-api.c   \
