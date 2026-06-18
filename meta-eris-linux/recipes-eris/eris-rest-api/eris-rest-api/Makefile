@@ -13,6 +13,7 @@ EXE = eris-rest-api
 OBJS =                     \
     addsnprintf.o          \
     contact-rest-api.o     \
+    container-rest-api.o   \
     eris-rest-api.o        \
     gpio-rest-api.o        \
     net-rest-api.o         \

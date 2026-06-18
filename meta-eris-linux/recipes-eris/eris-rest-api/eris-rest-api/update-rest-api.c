@@ -17,17 +17,12 @@
 
 // ---------------------- Private macros declarations.
 
-#define CONTACT_PERIOD_PREFIX     "status_upload_period_seconds="
-#define CONTAINER_UPDATE_POLICY   "container_update_policy="
-
 #define SYSTEM_UPDATE_STATUS_FILE "/var/run/system-update-status"
 
 
 // ---------------------- Private method declarations.
 
 static enum MHD_Result get_update_status    (struct MHD_Connection *connection);
-static enum MHD_Result get_container_policy (struct MHD_Connection *connection);
-static enum MHD_Result set_container_policy (struct MHD_Connection *connection);
 
 
 // ---------------------- Private variables.
@@ -45,11 +40,6 @@ enum MHD_Result update_rest_api(struct MHD_Connection *connection, const char *u
 {
 	if ((strcasecmp(url, "/api/update/status") == 0) && (strcmp(method, "GET") == 0))
 		return get_update_status(connection);
-
-	if ((strcasecmp(url, "/api/update/container/policy") == 0) && (strcmp(method, "GET") == 0))
-		return get_container_policy(connection);
-	if ((strcasecmp(url, "/api/update/container/policy") == 0) && (strcmp(method, "PUT") == 0))
-		return set_container_policy(connection);
 
 	return MHD_NO;
 }
@@ -90,32 +80,4 @@ static enum MHD_Result get_update_status(struct MHD_Connection *connection)
 
 
 
-static enum MHD_Result get_container_policy(struct MHD_Connection *connection)
-{
-	char *reply = NULL;
-
-	if ((read_parameter_value(CONTAINER_UPDATE_POLICY, &reply) != 0) || (reply == NULL))
-	 	return send_rest_response(connection, "immediate");
-
-	enum MHD_Result ret = send_rest_response(connection, reply);
-	free(reply);
-	return ret;
-}
-
-
-
-static enum MHD_Result set_container_policy(struct MHD_Connection *connection)
-{
-	const char *policy = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "policy");
-	if (policy == NULL)
-		return send_rest_error(connection, "Missing 'policy' parameter'.", 400);
-
-	if ((strcmp(policy, "immediate") != 0) && (strcmp(policy, "atreboot") != 0))
-		return send_rest_error(connection, "Container update policy must be 'immediate' or 'atreboot'.", 400);
-
-	if (write_parameter_value(CONTAINER_UPDATE_POLICY, policy) != 0)
-		return send_rest_error(connection, "Unable to save container update policy.", 500);
-
-	return send_rest_response(connection, "Ok");
-}
 

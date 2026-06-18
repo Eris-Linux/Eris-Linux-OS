@@ -1,11 +1,9 @@
 
 #include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <gpiod.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 
 #include "addsnprintf.h"
@@ -15,11 +13,12 @@
 
 // ---------------------- Private macros declarations.
 
-#define LICENSE_MANIFEST  "/usr/share/common-licenses/license.manifest"
-#define GENERIC_PREFIX    "/usr/share/common-licenses/generic_"
+#define LICENSE_MANIFEST        "/usr/share/common-licenses/license.manifest"
+#define GENERIC_PREFIX          "/usr/share/common-licenses/generic_"
+
 #define PACKAGE_NAME_PREFIX     "PACKAGE NAME: "
-#define RECIPE_NAME_PREFIX      "RECIPE NAME: "
 #define PACKAGE_VERSION_PREFIX  "PACKAGE VERSION: "
+#define RECIPE_NAME_PREFIX      "RECIPE NAME: "
 #define PACKAGE_LICENSE_PREFIX  "LICENSE: "
 
 
@@ -28,8 +27,9 @@
 struct eris_api_package {
 	char *name;
 	char *version;
-	char *details;
+	char *recipe;
 	char *licenses;
+	char *details;
 };
 
 
@@ -41,13 +41,14 @@ struct eris_api_license {
 // ---------------------- Private method declarations.
 
 static int  initialize_sbom(void);
-static void add_package(const char *name, const char *version, const char *details);
+static void add_package(const char *name, const char *version, const char *recipe, const char *license_details);
 static void add_license_if_not_exists(const char *name);
 static int  compare_packages(const void *a , const void *b);
 static int  compare_licenses(const void *a , const void *b);
 
 static enum MHD_Result get_packages_list    (struct MHD_Connection *connection, const char *url);
 static enum MHD_Result get_package_version  (struct MHD_Connection *connection, const char *url);
+static enum MHD_Result get_package_recipe   (struct MHD_Connection *connection, const char *url);
 static enum MHD_Result get_package_licenses (struct MHD_Connection *connection, const char *url);
 static enum MHD_Result get_licenses_list    (struct MHD_Connection *connection, const char *url);
 static enum MHD_Result get_license_text     (struct MHD_Connection *connection, const char *url);
@@ -55,10 +56,10 @@ static enum MHD_Result get_license_text     (struct MHD_Connection *connection, 
 
 // ---------------------- Private variables.
 
-static struct eris_api_package  *eris_api_packages = NULL;
+static struct eris_api_package *eris_api_packages = NULL;
 static int nb_eris_api_packages = 0;
 
-static struct eris_api_license  *eris_api_licenses = NULL;
+static struct eris_api_license *eris_api_licenses = NULL;
 static int nb_eris_api_licenses = 0;
 
 
@@ -66,6 +67,8 @@ static int nb_eris_api_licenses = 0;
 
 int init_sbom_rest_api(const char *app)
 {
+	(void) app;
+
 	return initialize_sbom();
 }
 
@@ -76,19 +79,22 @@ enum MHD_Result sbom_rest_api(struct MHD_Connection *connection, const char *url
 	if (strcmp(method, "GET") != 0)
 		return MHD_NO;
 
-	if (strcasecmp(url, "/api/package/list") == 0)
+	if (strcmp(url, "/api/sbom/package-list") == 0)
 		return get_packages_list(connection, url);
 
-	if (strcasecmp(url, "/api/package/version") == 0)
+	if (strcmp(url, "/api/sbom/package-version") == 0)
 		return get_package_version(connection, url);
 
-	if (strcasecmp(url, "/api/package/licenses") == 0)
+	if (strcmp(url, "/api/sbom/package-recipe") == 0)
+		return get_package_recipe(connection, url);
+
+	if (strcmp(url, "/api/sbom/package-licenses") == 0)
 		return get_package_licenses(connection, url);
 
-	if (strcasecmp(url, "/api/license/list") == 0)
+	if (strcmp(url, "/api/sbom/license-list") == 0)
 		return get_licenses_list(connection, url);
 
-	if (strcasecmp(url, "/api/license/text") == 0)
+	if (strcmp(url, "/api/sbom/license-text") == 0)
 		return get_license_text(connection, url);
 
 	return MHD_NO;
@@ -97,7 +103,7 @@ enum MHD_Result sbom_rest_api(struct MHD_Connection *connection, const char *url
 
 // ---------------------- Private methods
 
-#define NAME_MAX  1024
+#define ERIS_FIELD_MAX  1024
 
 static int initialize_sbom(void)
 {
@@ -106,39 +112,39 @@ static int initialize_sbom(void)
 
 		char line[1024];
 
-		char package_version[NAME_MAX];
-		char recipe_name[NAME_MAX];
-		char package_license[NAME_MAX];
+		char package_name[ERIS_FIELD_MAX] = "";
+		char package_version[ERIS_FIELD_MAX] = "";
+		char recipe_name[ERIS_FIELD_MAX] = "";
+		char license_details[ERIS_FIELD_MAX] = "";
 
-		while (fgets(line, 1024, fp) != NULL) {
+		while (fgets(line, sizeof(line), fp) != NULL) {
 
-			if (line[0] == '\0')
+			if (line[0] == '\0') {
+				if (package_name[0] != '\0')
+					add_package(package_name, package_version, recipe_name, license_details);
+				package_name[0] = package_version[0] = recipe_name[0] = license_details[0] = '\0';
 				continue;
+			}
 
-			line[strlen(line) - 1] = '\0';
+			line[strcspn(line, "\n")] = '\0';
 
 			if (strncmp(line, PACKAGE_NAME_PREFIX, strlen(PACKAGE_NAME_PREFIX)) == 0) {
-				continue;
+				strncpy(package_name, &line[strlen(PACKAGE_VERSION_PREFIX)], sizeof(package_name));
+				package_name[sizeof(package_name) - 1] = '\0';
 
 			} else if (strncmp(line, PACKAGE_VERSION_PREFIX, strlen(PACKAGE_VERSION_PREFIX)) == 0) {
-				strncpy(package_version, &line[strlen(PACKAGE_VERSION_PREFIX)], NAME_MAX);
-				package_version[NAME_MAX - 1] = '\0';
+				strncpy(package_version, &line[strlen(PACKAGE_VERSION_PREFIX)], sizeof(package_version));
+				package_version[sizeof(package_version) - 1] = '\0';
 
 			} else if (strncmp(line, RECIPE_NAME_PREFIX, strlen(RECIPE_NAME_PREFIX)) == 0) {
-				strncpy(recipe_name, &line[strlen(RECIPE_NAME_PREFIX)], NAME_MAX);
-				recipe_name[NAME_MAX - 1] = '\0';
+				strncpy(recipe_name, &line[strlen(RECIPE_NAME_PREFIX)], sizeof(recipe_name) );
+				recipe_name[sizeof(recipe_name) - 1] = '\0';
 
 			} else if (strncmp(line, PACKAGE_LICENSE_PREFIX, strlen(PACKAGE_LICENSE_PREFIX)) == 0) {
-				strncpy(package_license, &line[strlen(PACKAGE_LICENSE_PREFIX)], NAME_MAX);
-				package_license[NAME_MAX - 1] = '\0';
-
-			} else {
-				add_package(recipe_name, package_version, package_license);
-				recipe_name[0] = package_version[0] = package_license[0] = '\0';
+				strncpy(license_details, &line[strlen(PACKAGE_LICENSE_PREFIX)], sizeof(license_details));
+				license_details[sizeof(license_details) - 1] = '\0';
 			}
 		}
-		add_package(recipe_name, package_version, package_license);
-		recipe_name[0] = package_version[0] = package_license[0] = '\0';
 		fclose(fp);
 	}
 
@@ -150,76 +156,92 @@ static int initialize_sbom(void)
 
 
 
-static void add_package(const char *name, const char *version, const char *details)
+static void add_package(const char *package_name, const char *package_version, const char *recipe_name, const char *license_details)
 {
 	int i;
 
-	if ((name[0] == '\0') || (version[0] == '\0') || (details[0] == '\0'))
+	if ((package_name == NULL) || (package_version == NULL) || (recipe_name == NULL) || (license_details == NULL))
+		return;
+
+	if ((package_name[0] == '\0') || (package_version[0] == '\0') || (recipe_name[0] == '\0') || (license_details[0] == '\0'))
 		return;
 
 	for (i = 0; i < nb_eris_api_packages; i++) {
-		if (strcmp(name, eris_api_packages[i].name) == 0)
-			break;
+		if (strcmp(package_name, eris_api_packages[i].name) == 0)
+			return;
 	}
-	if (i != nb_eris_api_packages)
+
+	struct eris_api_package pkg;
+
+	memset(&pkg, 0, sizeof(pkg));
+
+	pkg.name     = strdup(package_name);
+	pkg.version  = strdup(package_version);
+	pkg.recipe   = strdup(recipe_name);
+	pkg.details  = strdup(license_details);
+	pkg.licenses = strdup(license_details);
+
+	if ((pkg.name == NULL) || (pkg.version == NULL) || (pkg.recipe == NULL) || (pkg.licenses == NULL) || (pkg.details == NULL)) {
+		free(pkg.name);
+		free(pkg.version);
+		free(pkg.recipe);
+		free(pkg.details);
+		free(pkg.licenses);
 		return;
+	}
 
-	struct eris_api_package *p = realloc(eris_api_packages, sizeof(struct eris_api_package) * (nb_eris_api_packages + 1));
-	if (p != NULL) {
-		eris_api_packages = p;
-		p = &(eris_api_packages[nb_eris_api_packages]);
-		nb_eris_api_packages ++;
+	int j = 0;
+	int k = 0;
+	while (pkg.details[j] != '\0') {
+		while ((isalnum((unsigned char)(pkg.details[j])))
+		    || (pkg.details[j] == '_')
+		    || (pkg.details[j] == '-')
+		    || (pkg.details[j] == '.'))
+			pkg.licenses[k++] = pkg.details[j++];
+		if (pkg.details[j] == '\0')
+			break;
+		pkg.licenses[k++] = ' ';
+		while ((! isalnum((unsigned char)(pkg.details[j])))
+		    && (pkg.details[j] != '_')
+		    && (pkg.details[j] != '-')
+		    && (pkg.details[j] != '.')
+		    && (pkg.details[j] != '\0'))
+			j++;
+	}
+	pkg.licenses[k] = '\0';
 
-		p->name = malloc(strlen(name) + 1);
-		if (p->name != NULL)
-			strcpy(p->name, name);
-
-		p->version = malloc(strlen(version) + 1);
-		if (p->version != NULL)
-			strcpy(p->version, version);
-
-		p->details = malloc(strlen(details) + 1);
-		if (p->details != NULL)
-			strcpy(p->details, details);
-
-		p->licenses = malloc(strlen(details) + 1);
-		if (p->licenses != NULL) {
-			int j = 0;
-			int k = 0;
-			while (details[j] != '\0') {
-				while ((isalnum(details[j]))
-				    || (details[j] == '_')
-				    || (details[j] == '-')
-				    || (details[j] == '.'))
-					p->licenses[k++] = details[j++];
-				if (details[j] == '\0')
-					break;
-				p->licenses[k++] = ' ';
-				while ((! isalnum(details[j]))
-				    && (details[j] != '_')
-				    && (details[j] != '-')
-				    && (details[j] != '.')
-				    && (details[j] != '\0'))
-					j++;
-			}
-			p->licenses[k] = '\0';
+	int start = 0;
+	while (pkg.licenses[start] != '\0') {
+		while (pkg.licenses[start] == ' ') {
+			start++;
+			continue;
 		}
-		int start = 0;
-		while (p->licenses[start] != '\0') {
-			while (p->licenses[start] == ' ') {
-				start++;
-				continue;
-			}
-			int stop = start + 1;
-			while ((p->licenses[stop] != ' ') && (p->licenses[stop] != '\0'))
-				stop++;
-			char save = p->licenses[stop];
-			p->licenses[stop] = '\0';
-			add_license_if_not_exists(&p->licenses[start]);
-			p->licenses[stop] = save;
+		int stop = start + 1;
+		while ((pkg.licenses[stop] != ' ') && (pkg.licenses[stop] != '\0')) {
+			stop++;
+			char save = pkg.licenses[stop];
+			pkg.licenses[stop] = '\0';
+			add_license_if_not_exists(&pkg.licenses[start]);
+			pkg.licenses[stop] = save;
 			start = stop;
 		}
 	}
+
+
+	struct eris_api_package *new_packages;
+	new_packages = realloc(eris_api_packages, sizeof(struct eris_api_package) * (nb_eris_api_packages + 1));
+	if (new_packages == NULL) {
+		free(pkg.name);
+		free(pkg.version);
+		free(pkg.recipe);
+		free(pkg.details);
+		free(pkg.licenses);
+		return;
+	}
+
+	eris_api_packages = new_packages;
+	eris_api_packages[nb_eris_api_packages++] = pkg;
+
 }
 
 
@@ -250,6 +272,14 @@ static int compare_packages(const void *a , const void *b)
 {
 	const struct eris_api_package *pa = (struct eris_api_package *) a;
 	const struct eris_api_package *pb = (struct eris_api_package *) b;
+	if ((pa == NULL) || (pb == NULL))
+		return 0;
+	if ((pa->name == NULL) && (pb->name == NULL))
+		return 0;
+	if (pa->name == NULL)
+		return 1;
+	if (pb->name == NULL)
+		return -1;
 	return strcasecmp(pa->name, pb->name);
 }
 
@@ -259,6 +289,14 @@ static int compare_licenses(const void *a , const void *b)
 {
 	const struct eris_api_license *la = (struct eris_api_license *) a;
 	const struct eris_api_license *lb = (struct eris_api_license *) b;
+	if ((la == NULL) || (lb == NULL))
+		return 0;
+	if ((la->name == NULL) || (lb->name == NULL))
+		return 0;
+	if (la->name == NULL)
+		return 1;
+	if (lb->name == NULL)
+		return -1;
 	return strcasecmp(la->name, lb->name);
 }
 
@@ -296,6 +334,33 @@ static enum MHD_Result get_package_version(struct MHD_Connection *connection, co
 	for (int i = 0; i < nb_eris_api_packages; i ++) {
 		if (strcmp(name, eris_api_packages[i].name) == 0) {
 			addsnprintf(&reply, &size, &pos, "%s", eris_api_packages[i].version);
+			break;
+		}
+	}
+
+	if (reply != NULL) {
+		int ret = send_rest_response(connection, reply);
+		free(reply);
+		return ret;
+	}
+	return send_rest_error(connection, "Package not found.", 404);
+}
+
+
+
+static enum MHD_Result get_package_recipe(struct MHD_Connection *connection, const char *url)
+{
+	char *reply = NULL;
+	size_t size = 0;
+	size_t pos = 0;
+
+	const char *name = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
+	if (name == NULL)
+	        return send_rest_error(connection, "Missing package name.", 400);
+
+	for (int i = 0; i < nb_eris_api_packages; i ++) {
+		if (strcmp(name, eris_api_packages[i].name) == 0) {
+			addsnprintf(&reply, &size, &pos, "%s", eris_api_packages[i].recipe);
 			break;
 		}
 	}
@@ -377,7 +442,7 @@ static enum MHD_Result get_license_text(struct MHD_Connection *connection, const
 		int len = strlen(name) + strlen(GENERIC_PREFIX);
 		char *filename = malloc(len + 1);
 		if (filename == NULL)
-			return send_rest_error(connection, "No license found.", 404);
+			return send_rest_error(connection, "Allocation error.", 500);
 		snprintf(filename, len + 1, "%s%s", GENERIC_PREFIX, name);
 		filename[len] = '\0';
 
@@ -389,7 +454,7 @@ static enum MHD_Result get_license_text(struct MHD_Connection *connection, const
 
 		} else {
 			char line[4096];
-			while (fgets(line, 4095, fp) != NULL)
+			while (fgets(line, sizeof(line), fp) != NULL)
 				addsnprintf(&reply, &size, &pos, "%s", line);
 			fclose(fp);
 		}

@@ -1,32 +1,34 @@
 DESCRIPTION = "Eris-Linux REST API between containers and host."
 LICENSE = "CLOSED"
 
-SRC_URI="                    \
-  file://addsnprintf.c       \
-  file://addsnprintf.h       \
-  file://contact-rest-api.c  \
-  file://contact-rest-api.h  \
-  file://eris-rest-api.c     \
-  file://eris-rest-api.h     \
-  file://gpio-rest-api.c     \
-  file://gpio-rest-api.h     \
-  file://net-rest-api.c      \
-  file://net-rest-api.h      \
-  file://reboot-rest-api.c   \
-  file://reboot-rest-api.h   \
-  file://sbom-rest-api.c     \
-  file://sbom-rest-api.h     \
-  file://system-rest-api.c   \
-  file://system-rest-api.h   \
-  file://time-rest-api.c     \
-  file://time-rest-api.h     \
-  file://update-rest-api.c   \
-  file://update-rest-api.h   \
-  file://watchdog-rest-api.c \
-  file://watchdog-rest-api.h \
-  file://Makefile            \
-  file://start-${BPN}        \
-  file://${BPN}.service      \
+SRC_URI="                     \
+  file://addsnprintf.c        \
+  file://addsnprintf.h        \
+  file://contact-rest-api.c   \
+  file://contact-rest-api.h   \
+  file://container-rest-api.c \
+  file://container-rest-api.h \
+  file://eris-rest-api.c      \
+  file://eris-rest-api.h      \
+  file://gpio-rest-api.c      \
+  file://gpio-rest-api.h      \
+  file://net-rest-api.c       \
+  file://net-rest-api.h       \
+  file://reboot-rest-api.c    \
+  file://reboot-rest-api.h    \
+  file://sbom-rest-api.c      \
+  file://sbom-rest-api.h      \
+  file://system-rest-api.c    \
+  file://system-rest-api.h    \
+  file://time-rest-api.c      \
+  file://time-rest-api.h      \
+  file://update-rest-api.c    \
+  file://update-rest-api.h    \
+  file://watchdog-rest-api.c  \
+  file://watchdog-rest-api.h  \
+  file://Makefile             \
+  file://start-${BPN}         \
+  file://${BPN}.service       \
 "
 
 DEPENDS += "libgpiod"
