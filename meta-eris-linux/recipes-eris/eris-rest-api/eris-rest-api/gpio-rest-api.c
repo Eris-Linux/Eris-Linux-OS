@@ -193,10 +193,8 @@ static enum MHD_Result get_gpio_list(struct MHD_Connection *connection)
 	addsnprintf(&reply, &size, &pos, "]");
 	pthread_mutex_unlock(&Gpio_mutex);
 
-	if (reply == NULL)
-		ret = send_rest_response(connection, "[]");
 	int ret;
-	if (reply[0] == '\0')
+	if ((reply == NULL) || (reply[0] == '\0'))
 		ret = send_rest_response(connection, "[]");
 	else
 		ret = send_rest_response(connection, reply);
