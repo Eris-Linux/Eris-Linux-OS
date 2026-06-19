@@ -21,7 +21,6 @@ OBJS =                     \
     sbom-rest-api.o        \
     system-rest-api.o      \
     time-rest-api.o        \
-    update-rest-api.o      \
     watchdog-rest-api.o    \
 
 INC =

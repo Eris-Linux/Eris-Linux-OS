@@ -42,8 +42,6 @@ tags:
     description: Network interfaces status and setup.
   - name: System
     description: System related information.
-  - name: Update
-    description: Update system and device manager communication.
 paths:
   /api/contact/now:
     $ref: './paths/contact.yaml#/now'
@@ -138,7 +136,4 @@ paths:
     $ref: './paths/system.yaml#/uuid'
   /api/system/version:
     $ref: './paths/system.yaml#/version'
-
-  /api/update/status:
-    $ref: './paths/update.yaml#/status'
 

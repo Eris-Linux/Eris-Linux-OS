@@ -22,8 +22,6 @@ SRC_URI="                     \
   file://system-rest-api.h    \
   file://time-rest-api.c      \
   file://time-rest-api.h      \
-  file://update-rest-api.c    \
-  file://update-rest-api.h    \
   file://watchdog-rest-api.c  \
   file://watchdog-rest-api.h  \
   file://Makefile             \

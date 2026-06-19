@@ -26,7 +26,6 @@
 #include "net-rest-api.h"
 #include "sbom-rest-api.h"
 #include "system-rest-api.h"
-#include "update-rest-api.h"
 
 
 // ---------------------- Private macros declarations.
@@ -228,8 +227,6 @@ static enum MHD_Result eris_rest_api_handler(
 	if (strncmp(url, "/api/system", 11) == 0)
 		return system_rest_api(connection, url, method);
 
-	if (strncmp(url, "/api/update", 11) == 0)
-		return update_rest_api(connection, url, method);
 
 	return MHD_NO;
 }
@@ -268,9 +265,6 @@ static int eris_rest_api_init(int argc, char *argv[])
 	if (init_system_rest_api(argv[0]) != 0)
 		return -1;
 
-	if (init_update_rest_api(argv[0]) != 0)
-		return -1;
-
 	return 0;
 }
 
@@ -289,7 +283,6 @@ static enum MHD_Result eris_rest_api(struct MHD_Connection *connection, const ch
 			"  /api/sbom       S-BOM (package and license details),\n"
 			"  /api/reboot     restart related features,\n"
 			"  /api/time       access to time-handling features,\n"
-			"  /api/update     access to system and container update parameters,\n"
 			"  /api/watchdog   access to watchdog features,\n"
 			"";
 		return send_rest_response(connection, message);
