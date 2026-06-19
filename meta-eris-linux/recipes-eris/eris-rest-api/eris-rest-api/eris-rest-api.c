@@ -20,12 +20,12 @@
 #include "eris-rest-api.h"
 #include "gpio-rest-api.h"
 #include "reboot-rest-api.h"
+#include "system-rest-api.h"
 #include "time-rest-api.h"
 #include "watchdog-rest-api.h"
 
 #include "net-rest-api.h"
 #include "sbom-rest-api.h"
-#include "system-rest-api.h"
 
 
 // ---------------------- Private macros declarations.
@@ -213,6 +213,9 @@ static enum MHD_Result eris_rest_api_handler(
 	if (strncmp(url, "/api/sbom", 9) == 0)
 		return sbom_rest_api(connection, url, method);
 
+	if (strncmp(url, "/api/system", 11) == 0)
+		return system_rest_api(connection, url, method);
+
 	if (strncmp(url, "/api/time", 9) == 0)
 		return time_rest_api(connection, url, method);
 
@@ -223,10 +226,6 @@ static enum MHD_Result eris_rest_api_handler(
 
 	if (strncmp(url, "/api/network", 12) == 0)
 		return net_rest_api(connection, url, method);
-
-	if (strncmp(url, "/api/system", 11) == 0)
-		return system_rest_api(connection, url, method);
-
 
 	return MHD_NO;
 }
@@ -250,6 +249,9 @@ static int eris_rest_api_init(int argc, char *argv[])
 	if (init_sbom_rest_api(argv[0]) != 0)
 		return -1;
 
+	if (init_system_rest_api(argv[0]) != 0)
+		return -1;
+
 	if (init_time_rest_api(argv[0]) != 0)
 		return -1;
 
@@ -260,9 +262,6 @@ static int eris_rest_api_init(int argc, char *argv[])
 
 
 	if (init_net_rest_api(argv[0]) != 0)
-		return -1;
-
-	if (init_system_rest_api(argv[0]) != 0)
 		return -1;
 
 	return 0;
@@ -282,8 +281,9 @@ static enum MHD_Result eris_rest_api(struct MHD_Connection *connection, const ch
 			"  /api/network    access to network setup functions,\n"
 			"  /api/sbom       S-BOM (package and license details),\n"
 			"  /api/reboot     restart related features,\n"
-			"  /api/time       access to time-handling features,\n"
-			"  /api/watchdog   access to watchdog features,\n"
+			"  /api/time       time-handling features,\n"
+			"  /api/system     system and update parameters,\n"
+			"  /api/watchdog   watchdog setup.\n"
 			"";
 		return send_rest_response(connection, message);
 	}

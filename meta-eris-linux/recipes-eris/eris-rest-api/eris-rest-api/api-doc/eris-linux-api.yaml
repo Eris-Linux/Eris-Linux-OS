@@ -33,6 +33,8 @@ tags:
     description: System restart related features.
   - name: SBOM
     description: Software Bill of Materials - informations about the packages installed on the system (not in containers).
+  - name: System
+    description: System related information.
   - name: Time
     description: Time, NTP and time zone related methods.
   - name: Watchdog
@@ -40,8 +42,6 @@ tags:
 
   - name: Network
     description: Network interfaces status and setup.
-  - name: System
-    description: System related information.
 paths:
   /api/contact/now:
     $ref: './paths/contact.yaml#/now'
@@ -92,6 +92,17 @@ paths:
   /api/sbom/license-text:
     $ref: './paths/sbom.yaml#/license-text'
 
+  /api/system/model:
+    $ref: './paths/system.yaml#/model'
+  /api/system/type:
+    $ref: './paths/system.yaml#/type'
+  /api/system/uuoid:
+    $ref: './paths/system.yaml#/uuid'
+  /api/system/version:
+    $ref: './paths/system.yaml#/version'
+  /api/system/status:
+    $ref: './paths/system.yaml#/status'
+
   /api/time/ntp/server:
     $ref: './paths/time.yaml#/ntp-server'
   /api/time/ntp:
@@ -128,12 +139,4 @@ paths:
   /api/network/wifi/quality:
     $ref: './paths/network.yaml#/wifi-quality'
 
-  /api/system/model:
-    $ref: './paths/system.yaml#/model'
-  /api/system/type:
-    $ref: './paths/system.yaml#/type'
-  /api/system/uuoid:
-    $ref: './paths/system.yaml#/uuid'
-  /api/system/version:
-    $ref: './paths/system.yaml#/version'
 

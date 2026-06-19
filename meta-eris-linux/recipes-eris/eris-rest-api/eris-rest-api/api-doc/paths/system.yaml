@@ -75,3 +75,23 @@ version:
           text/plain:
             schema:
               type: string
+
+
+status:
+  get:
+    summary: Get the update status the system.
+    tags: [ System ]
+    responses:
+      '200':
+        description: update status ("1 System OK.", "2 System update install in progress.", "3 System update install Ok.", "4 System update install failed.", "5 System reboot in progress."
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error accessing system update status.
+        content:
+          text/plain:
+            schema:
+              type: string
+
