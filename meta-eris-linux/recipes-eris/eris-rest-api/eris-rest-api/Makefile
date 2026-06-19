@@ -41,7 +41,7 @@ $(EXE): $(OBJS)
 .PHONY: clean
 
 clean:
-	rm -f *.o $(EXE)
+	rm -f *.o $(EXE) api-doc/eris-linux-api.html
 
 .PHONY: install
 
