@@ -1,0 +1,213 @@
+list:
+  get:
+    summary: Get the list of available GPIO.
+    tags: [ GPIO ]
+    responses:
+      '200':
+        description: The line-separated list of GPIO identifier followed by GPIO name between brackets.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                required:
+                  - id
+                  - name
+                properties:
+                  id:
+                    type: string
+                    description: GPIO identifier.
+                    example: gpiochip0:17
+                  name:
+                    type: string
+                    description: Human readable GPIO name.
+                    example: BUTTON_1
+
+      '500':
+        description: No GPIO available.
+        content:
+          text/plain:
+            schema:
+              type: string
+gpio:
+  post:
+    summary: Reserve a GPIO.
+    tags: [ GPIO ]
+    parameters:
+      - name: id
+        in: query
+        required: true
+        description: GPIO identifier as displayed in `GET /api/gpio/list` result.
+        schema:
+          type: string
+      - name: direction
+        in: query
+        required: true
+        description: GPIO direction, must be 'in' or 'out'.
+        schema:
+          type: string
+      - name: value
+        in: query
+        required: false
+        description: value to write if the direction is 'out' (must be '0' or '1').
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing GPIO identifier/direction/value or invalid direction/value.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '409':
+        description: GPIO line is already reserved by Eris API.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown GPIO identifier.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Memory allocation error.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+  delete:
+    summary: Release a previously reserved GPIO line.
+    tags: [ GPIO ]
+    parameters:
+      - name: id
+        in: query
+        required: true
+        description: GPIO identifier as displayed in `GET /api/gpio/list` result.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing GPIO identifier.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '409':
+        description: GPIO already free.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown GPIO identifier.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal Error
+        content:
+          text/plain:
+            schema:
+              type: string
+
+value:
+  get:
+    summary: Read the value of an input GPIO.
+    tags: [ GPIO ]
+    parameters:
+      - name: id
+        in: query
+        required: true
+        description: GPIO identifier as displayed in `GET /api/gpio/list` result.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: iary value read on the GPIO.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing GPIO identifier.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '409':
+        description: GPIO not reserved or not in input.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown GPIO identifier.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Unable to read GPIO value.
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Write a value to an output GPIO.
+    tags: [ GPIO ]
+    parameters:
+      - name: id
+        in: query
+        required: true
+        description: GPIO identifier as displayed in `GET /api/gpio/list` result.
+        schema:
+          type: string
+      - name: value
+        in: query
+        required: true
+        description: Value to write (must be '0' or '1').
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing GPIO identifier, missing or invalid value.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '409':
+        description: GPIO not reserved or not in output.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown GPIO identifier.
+        content:
+          text/plain:
+            schema:
+              type: string
+

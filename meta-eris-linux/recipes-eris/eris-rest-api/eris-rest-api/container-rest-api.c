@@ -66,10 +66,10 @@ enum MHD_Result container_rest_api(struct MHD_Connection *connection, const char
 	if ((strcmp(url, "/api/container/version") == 0) && (strcmp(method, "GET") == 0))
 		return get_container_version(connection);
 
-	if ((strcmp(url, "/api/update/container/policy") == 0) && (strcmp(method, "GET") == 0))
+	if ((strcmp(url, "/api/container/policy") == 0) && (strcmp(method, "GET") == 0))
 		return get_container_policy(connection);
 
-	if ((strcmp(url, "/api/update/container/policy") == 0) && (strcmp(method, "PUT") == 0))
+	if ((strcmp(url, "/api/container/policy") == 0) && (strcmp(method, "PUT") == 0))
 		return put_container_policy(connection);
 
 

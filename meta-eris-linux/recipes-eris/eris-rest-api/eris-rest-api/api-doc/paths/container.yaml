@@ -1,3 +1,15 @@
+count:
+  get:
+    summary: Get the maximal number of containers allowed.
+    tags: [ Containers ]
+    responses:
+      '200':
+        description: number of containers allowed.
+        content:
+          text/plain:
+            schema:
+              type: string
+
 name:
   get:
     summary: Get the name of the container installed in a slot.
@@ -121,3 +133,45 @@ version:
           text/plain:
             schema:
               type: string
+
+policy:
+  get:
+    summary: Get the policy for container update.
+    tags: [ Containers ]
+    responses:
+      '200':
+        description: Policy for container update (`immediate` or `atreboot`).
+        content:
+          text/plain:
+            schema:
+              type: string
+  put:
+    summary: Set the policy for container update.
+    tags: [ Containers ]
+    parameters:
+      - name: policy
+        in: query
+        required: true
+        description: Policy for the container update (`immediate` or `atreboot`).
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Ok
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing or invalid policy parameter (must be `immediate` or `atreboot`).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error when trying to save the policy.
+        content:
+          text/plain:
+            schema:
+              type: string
+

@@ -25,19 +25,19 @@ externalDocs:
 tags:
   - name: Contact
     description: Periodic contact between the embedded system and the device manager.
+  - name: Containers
+    description: Docker container related operations.
+  - name: GPIO
+    description: General Purpose Input Output related requests.
   - name: Reboot
     description: System restart related features.
+  - name: SBOM
+    description: Software Bill of Materials - informations about the packages installed on the system (not in containers).
   - name: Time
     description: Time, NTP and time zone related methods.
   - name: Watchdog
     description: Watchdog related operations.
 
-  - name: Containers
-    description: Docker container related operations.
-  - name: Packages
-    description: Packages installed in Eris Linux system (not in containers).
-  - name: Licenses
-    description: Open Source licenses present on Eris Linux system.
   - name: Network
     description: Network interfaces status and setup.
   - name: System
@@ -50,6 +50,26 @@ paths:
   /api/contact/period:
     $ref: './paths/contact.yaml#/period'
 
+  /api/container/count:
+    $ref: './paths/container.yaml#/count'
+  /api/container/name:
+    $ref: './paths/container.yaml#/name'
+  /api/container/presence:
+    $ref: './paths/container.yaml#/presence'
+  /api/container/status:
+    $ref: './paths/container.yaml#/status'
+  /api/container/version:
+    $ref: './paths/container.yaml#/version'
+  /api/container/policy:
+    $ref: './paths/container.yaml#/policy'
+
+  /api/gpio/list:
+    $ref: './paths/gpio.yaml#/list'
+  /api/gpio:
+    $ref: './paths/gpio.yaml#/gpio'
+  /api/gpio/value:
+    $ref: './paths/gpio.yaml#/value'
+
   /api/reboot/now:
     $ref: './paths/reboot.yaml#/now'
   /api/reboot/automatic:
@@ -60,6 +80,19 @@ paths:
     $ref: './paths/reboot.yaml#/rollback'
   /api/reboot/factory:
     $ref: './paths/reboot.yaml#/factory'
+
+  /api/sbom/package-list:
+    $ref: './paths/sbom.yaml#/package-list'
+  /api/sbom/package-version:
+    $ref: './paths/sbom.yaml#/package-version'
+  /api/sbom/package-recipe:
+    $ref: './paths/sbom.yaml#/package-recipe'
+  /api/sbom/package-licenses:
+    $ref: './paths/sbom.yaml#/package-licenses'
+  /api/sbom/license-list:
+    $ref: './paths/sbom.yaml#/license-list'
+  /api/sbom/license-text:
+    $ref: './paths/sbom.yaml#/license-text'
 
   /api/time/ntp/server:
     $ref: './paths/time.yaml#/ntp-server'
@@ -81,27 +114,6 @@ paths:
   /api/watchdog/feeder:
     $ref: './paths/watchdog.yaml#/watchdog-feeder'
 
-
-  /api/container/presence:
-    $ref: './paths/container.yaml#/presence'
-  /api/container/name:
-    $ref: './paths/container.yaml#/name'
-  /api/container/status:
-    $ref: './paths/container.yaml#/status'
-  /api/container/version:
-    $ref: './paths/container.yaml#/version'
-
-  /api/license/list:
-    $ref: './paths/license.yaml#/list'
-  /api/license/text:
-    $ref: './paths/license.yaml#/text'
-
-  /api/package/list:
-    $ref: './paths/package.yaml#/list'
-  /api/package/version:
-    $ref: './paths/package.yaml#/version'
-  /api/package/licenses:
-    $ref: './paths/package.yaml#/licenses'
 
   /api/network/interface/list:
     $ref: './paths/network.yaml#/interface-list'
@@ -127,8 +139,6 @@ paths:
   /api/system/version:
     $ref: './paths/system.yaml#/version'
 
-  /api/update/container/policy:
-    $ref: './paths/update.yaml#/container-policy'
   /api/update/status:
     $ref: './paths/update.yaml#/status'
 

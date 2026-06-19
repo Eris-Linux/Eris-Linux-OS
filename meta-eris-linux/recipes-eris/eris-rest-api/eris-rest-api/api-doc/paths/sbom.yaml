@@ -1,0 +1,166 @@
+package-list:
+  get:
+    summary: Get a list of packages embedded in Eris Linux system.
+    tags: [ SBOM ]
+    responses:
+      '200':
+        description: Space-separated list of all packages embedded in Eris Linux system (not including the containers).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: No package found.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+package-version:
+  get:
+    summary: Get the version number of a package installed on the Eris Linux system.
+    tags: [ SBOM ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the package, as returned in the list provided by `GET /api/sbom/package-list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Version of the package.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing package `name` argument.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Package not found.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+package-recipe:
+  get:
+    summary: Get the name of the recipe used to build a package.
+    tags: [ SBOM ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the package, as returned in the list provided by `GET /api/sbom/package-list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Name of the recipe.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing package `name` argument.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Package not found.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+package-licenses:
+  get:
+    summary: Get the list of licenses concerning a package and their logical relationships.
+    tags: [ SBOM ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the package, as returned in the list provided by `GET /api/sbom/package-list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: List of licenses concerning the package with logical operator describing their relationships.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing package `name` argument.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Package not found.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+license-list:
+  get:
+    summary: Get a space-separated list of all licenses.
+    tags: [ SBOM ]
+    responses:
+      '200':
+        description: List of licenses used by packages installed in Eris Linux system (but not in the containers).
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: No license found.
+        content:
+          text/plain:
+            schema:
+              type: string
+
+license-text:
+  get:
+    summary: Get the full text of a license.
+    tags:  [ SBOM ]
+    parameters:
+      - name: name
+        in: query
+        required: true
+        description: Name of the license as returned in the list provided by `GET /api/sbom/license-list`.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Full text of the given license.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '400':
+        description: Missing license `name` argument.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '404':
+        description: Unknown license.
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Allocation error.
+        content:
+          text/plain:
+            schema:
+              type: string
+
