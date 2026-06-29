@@ -41,7 +41,7 @@ period:
 
 now:
   post:
-    summary: Ask the device to contact the server immediatly.
+    summary: Ask the device to contact the device manager immediately.
     tags: [ Contact ]
     responses:
       '200':
@@ -51,7 +51,7 @@ now:
             schema:
               type: string
       '500':
-        description: Internal error when trying to contact the server.
+        description: Unable to trigger a server contact.
         content:
           text/plain:
             schema:

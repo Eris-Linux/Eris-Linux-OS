@@ -63,13 +63,13 @@ automatic:
     tags: [ Reboot ]
     responses:
       '200':
-        description: Whether (`yes` or `no`) the system reboots automatically after a Eris Linux update.
+        description: Returns `yes` if the system reboots automatically after a Eris Linux update or `no` otherwise.
         content:
           text/plain:
             schema:
               type: string
   put:
-    summary: Indicates if the system must reboot automatically after update.
+    summary: Configure automatic reboot after a system update.
     tags: [ Reboot ]
     parameters:
       - name: auto

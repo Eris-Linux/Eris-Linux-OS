@@ -29,6 +29,8 @@ tags:
     description: Docker container related operations.
   - name: GPIO
     description: General Purpose Input Output related requests.
+  - name: Network
+    description: Network interfaces status and setup.
   - name: Reboot
     description: System restart related features.
   - name: SBOM
@@ -39,9 +41,6 @@ tags:
     description: Time, NTP and time zone related methods.
   - name: Watchdog
     description: Watchdog related operations.
-
-  - name: Network
-    description: Network interfaces status and setup.
 paths:
   /api/contact/now:
     $ref: './paths/contact.yaml#/now'
@@ -79,24 +78,24 @@ paths:
   /api/reboot/factory:
     $ref: './paths/reboot.yaml#/factory'
 
-  /api/sbom/package-list:
+  /api/sbom/package/list:
     $ref: './paths/sbom.yaml#/package-list'
-  /api/sbom/package-version:
+  /api/sbom/package/version:
     $ref: './paths/sbom.yaml#/package-version'
-  /api/sbom/package-recipe:
+  /api/sbom/package/recipe:
     $ref: './paths/sbom.yaml#/package-recipe'
-  /api/sbom/package-licenses:
+  /api/sbom/package/licenses:
     $ref: './paths/sbom.yaml#/package-licenses'
-  /api/sbom/license-list:
+  /api/sbom/license/list:
     $ref: './paths/sbom.yaml#/license-list'
-  /api/sbom/license-text:
+  /api/sbom/license/text:
     $ref: './paths/sbom.yaml#/license-text'
 
   /api/system/model:
     $ref: './paths/system.yaml#/model'
   /api/system/type:
     $ref: './paths/system.yaml#/type'
-  /api/system/uuoid:
+  /api/system/uuid:
     $ref: './paths/system.yaml#/uuid'
   /api/system/version:
     $ref: './paths/system.yaml#/version'
