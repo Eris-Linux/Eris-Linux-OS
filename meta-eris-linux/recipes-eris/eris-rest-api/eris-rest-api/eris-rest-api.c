@@ -19,13 +19,12 @@
 #include "container-rest-api.h"
 #include "eris-rest-api.h"
 #include "gpio-rest-api.h"
+#include "net-rest-api.h"
 #include "reboot-rest-api.h"
+#include "sbom-rest-api.h"
 #include "system-rest-api.h"
 #include "time-rest-api.h"
 #include "watchdog-rest-api.h"
-
-#include "net-rest-api.h"
-#include "sbom-rest-api.h"
 
 
 // ---------------------- Private macros declarations.
@@ -207,6 +206,9 @@ static enum MHD_Result eris_rest_api_handler(
 	if (strncmp(url, "/api/gpio", 9) == 0)
 		return gpio_rest_api(connection, url, method);
 
+	if (strncmp(url, "/api/network", 12) == 0)
+		return net_rest_api(connection, url, method);
+
 	if (strncmp(url, "/api/reboot", 11) == 0)
 		return reboot_rest_api(connection, url, method);
 
@@ -221,11 +223,6 @@ static enum MHD_Result eris_rest_api_handler(
 
 	if (strncmp(url, "/api/watchdog", 13) == 0)
 		return watchdog_rest_api(connection, url, method);
-
-
-
-	if (strncmp(url, "/api/network", 12) == 0)
-		return net_rest_api(connection, url, method);
 
 	return MHD_NO;
 }
@@ -243,6 +240,9 @@ static int eris_rest_api_init(int argc, char *argv[])
 	if (init_gpio_rest_api(argv[0]) != 0)
 		return -1;
 
+	if (init_net_rest_api(argv[0]) != 0)
+		return -1;
+
 	if (init_reboot_rest_api(argv[0]) != 0)
 		return -1;
 
@@ -256,12 +256,6 @@ static int eris_rest_api_init(int argc, char *argv[])
 		return -1;
 
 	if (init_watchdog_rest_api(argv[0]) != 0)
-		return -1;
-
-
-
-
-	if (init_net_rest_api(argv[0]) != 0)
 		return -1;
 
 	return 0;
@@ -279,10 +273,10 @@ static enum MHD_Result eris_rest_api(struct MHD_Connection *connection, const ch
 			"  /api/container  container informations,\n"
 			"  /api/gpio       GPIO-based features,\n"
 			"  /api/network    access to network setup functions,\n"
-			"  /api/sbom       S-BOM (package and license details),\n"
 			"  /api/reboot     restart related features,\n"
-			"  /api/time       time-handling features,\n"
+			"  /api/sbom       S-BOM (package and license details),\n"
 			"  /api/system     system and update parameters,\n"
+			"  /api/time       time-handling features,\n"
 			"  /api/watchdog   watchdog setup.\n"
 			"";
 		return send_rest_response(connection, message);

@@ -55,20 +55,20 @@ static int load_eris_network_configuration    (void);
 static int save_eris_network_configuration    (void);
 static int write_system_network_configuration (void);
 
-static enum MHD_Result list_network_interfaces      (struct MHD_Connection *connection);
+static enum MHD_Result get_network_interface_list   (struct MHD_Connection *connection);
 static enum MHD_Result get_network_interface_status (struct MHD_Connection *connection);
-static enum MHD_Result set_network_interface_status (struct MHD_Connection *connection);
+static enum MHD_Result put_network_interface_status (struct MHD_Connection *connection);
 static enum MHD_Result get_network_interface_config (struct MHD_Connection *connection);
-static enum MHD_Result set_network_interface_config (struct MHD_Connection *connection);
+static enum MHD_Result put_network_interface_config (struct MHD_Connection *connection);
 static enum MHD_Result get_dns_address              (struct MHD_Connection *connection);
-static enum MHD_Result set_dns_address              (struct MHD_Connection *connection);
-static enum MHD_Result is_interface_wireless        (struct MHD_Connection *connection);
-static enum MHD_Result scan_wifi                    (struct MHD_Connection *connection);
-static enum MHD_Result connect_wifi                 (struct MHD_Connection *connection);
-static enum MHD_Result disconnect_wifi              (struct MHD_Connection *connection);
+static enum MHD_Result put_dns_address              (struct MHD_Connection *connection);
+static enum MHD_Result get_interface_wireless_flag  (struct MHD_Connection *connection);
+static enum MHD_Result get_wifi_scan                (struct MHD_Connection *connection);
+static enum MHD_Result post_wifi_connection         (struct MHD_Connection *connection);
+static enum MHD_Result delete_wifi_connection       (struct MHD_Connection *connection);
 static enum MHD_Result get_wifi_quality             (struct MHD_Connection *connection);
 static enum MHD_Result get_wifi_access_point        (struct MHD_Connection *connection);
-static enum MHD_Result set_wifi_access_point        (struct MHD_Connection *connection);
+static enum MHD_Result put_wifi_access_point        (struct MHD_Connection *connection);
 
 static int get_ip_and_netmask (int itf);
 static int get_default_route  (int itf);
@@ -95,49 +95,51 @@ int init_net_rest_api(const char *app)
 
 enum MHD_Result net_rest_api(struct MHD_Connection *connection, const char *url, const char *method)
 {
-	if (strcasecmp(url, "/api/network/interface/list") == 0) {
+	if (strcmp(url, "/api/network/interface/list") == 0) {
 		if (strcmp(method, "GET") == 0)
-			return list_network_interfaces(connection);
+			return get_network_interface_list(connection);
 	}
-	if (strcasecmp(url, "/api/network/interface/status") == 0) {
+	if (strcmp(url, "/api/network/interface/status") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_network_interface_status(connection);
 		if (strcmp(method, "PUT") == 0)
-			return set_network_interface_status(connection);
+			return put_network_interface_status(connection);
 	}
-	if (strcasecmp(url, "/api/network/interface/config") == 0) {
+	if (strcmp(url, "/api/network/interface/config") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_network_interface_config(connection);
 		if (strcmp(method, "PUT") == 0)
-			return set_network_interface_config(connection);
+			return put_network_interface_config(connection);
 	}
-	if (strcasecmp(url, "/api/network/interface/wireless") == 0) {
+	if (strcmp(url, "/api/network/interface/wireless") == 0) {
 		if (strcmp(method, "GET") == 0)
-			return is_interface_wireless(connection);
+			return get_interface_wireless_flag(connection);
 	}
-	if (strcasecmp(url, "/api/network/dns") == 0) {
+	if (strcmp(url, "/api/network/dns") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_dns_address(connection);
 		if (strcmp(method, "PUT") == 0)
-			return set_dns_address(connection);
+			return put_dns_address(connection);
 	}
-	if (strcasecmp(url, "/api/network/wifi") == 0) {
+	if (strcmp(url, "/api/network/wifi") == 0) {
 		if (strcmp(method, "GET") == 0)
-			return scan_wifi(connection);
-		if (strcmp(method, "POST") == 0)
-			return connect_wifi(connection);
-		if (strcmp(method, "DELETE") == 0)
-			return disconnect_wifi(connection);
+			return get_wifi_scan(connection);
 	}
-	if (strcasecmp(url, "/api/network/wifi/quality") == 0) {
+	if (strcmp(url, "/api/network/wifi/connection") == 0) {
+		if (strcmp(method, "POST") == 0)
+			return post_wifi_connection(connection);
+		if (strcmp(method, "DELETE") == 0)
+			return delete_wifi_connection(connection);
+	}
+	if (strcmp(url, "/api/network/wifi/quality") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_wifi_quality(connection);
 	}
-	if (strcasecmp(url, "/api/network/wifi/access-point") == 0) {
+	if (strcmp(url, "/api/network/wifi/access-point") == 0) {
 		if (strcmp(method, "GET") == 0)
 			return get_wifi_access_point(connection);
 		if (strcmp(method, "PUT") == 0)
-			return set_wifi_access_point(connection);
+			return put_wifi_access_point(connection);
 	}
 
 	return MHD_NO;
@@ -146,6 +148,8 @@ enum MHD_Result net_rest_api(struct MHD_Connection *connection, const char *url,
 
 // ---------------------- Private methods
 
+// Load network setup from Eris configuration file.
+//
 static int load_eris_network_configuration(void)
 {
 	FILE *fp;
@@ -268,6 +272,8 @@ static int load_eris_network_configuration(void)
 
 
 
+// Save network setup to Eris configuration file.
+//
 static int save_eris_network_configuration(void)
 {
 	FILE *fp;
@@ -298,6 +304,8 @@ static int save_eris_network_configuration(void)
 
 
 
+// Write network setup to system configuration file.
+//
 static int write_system_network_configuration(void)
 {
 	FILE *fp = fopen(SYSTEM_NETWORK_CONFIG_FILE, "w");
@@ -334,7 +342,7 @@ static int write_system_network_configuration(void)
 
 
 
-static enum MHD_Result list_network_interfaces(struct MHD_Connection *connection)
+static enum MHD_Result get_network_interface_list(struct MHD_Connection *connection)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -375,7 +383,7 @@ static enum MHD_Result get_network_interface_status(struct MHD_Connection *conne
 	int itf;
 	size_t size = 0;
 	size_t pos  = 0;
-	
+
 	const char *name = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
 
 	if (name == NULL)
@@ -391,22 +399,22 @@ static enum MHD_Result get_network_interface_status(struct MHD_Connection *conne
 	if (itf >= nb_network_interfaces) {
 		return send_rest_error(connection, "Unknown interface.", 404);
 	}
-	
+
 	char filename[256];
 	snprintf(filename, 256, "/sys/class/net/%s/operstate", name);
 	filename[255] = '\0';
-	
+
 	FILE *fp = fopen(filename, "r");
 	if (fp == NULL)
 	return send_rest_error(connection, "The interface doesn't exist anymore.", 404);
-	
+
 	char line[1024];
 	if (fgets(line, 1024, fp) == NULL) {
 		fclose(fp);
 		return send_rest_error(connection, "The interface state is invalid.", 404);
 	}
 	fclose(fp);
-	
+
 	char *reply = NULL;
 	if (strncasecmp(line, "up", 2) == 0) {
 		if (get_ip_and_netmask(itf) < 0)
@@ -425,7 +433,7 @@ static enum MHD_Result get_network_interface_status(struct MHD_Connection *conne
 
 
 
-static enum MHD_Result set_network_interface_status(struct MHD_Connection *connection)
+static enum MHD_Result put_network_interface_status(struct MHD_Connection *connection)
 {
 	const char *name = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
 
@@ -477,7 +485,7 @@ static enum MHD_Result get_network_interface_config(struct MHD_Connection *conne
 	addsnprintf(&reply, &size, &pos, "%s %s ",
 		name,
 		network_interfaces[itf].at_boot ? "atboot" : "ondemand");
-	
+
 	if (network_interfaces[itf].dhcp) {
 		addsnprintf(&reply, &size, &pos, "dhcp");
 	} else {
@@ -507,7 +515,7 @@ static enum MHD_Result get_network_interface_config(struct MHD_Connection *conne
 
 
 
-static enum MHD_Result set_network_interface_config(struct MHD_Connection *connection)
+static enum MHD_Result put_network_interface_config(struct MHD_Connection *connection)
 {
 	int itf;
 
@@ -519,7 +527,7 @@ static enum MHD_Result set_network_interface_config(struct MHD_Connection *conne
 	for (int i = 0; name[i] != '\0'; i++)
 		if ((name[i] == '/') || ( name == ';'))
 			return send_rest_error(connection, "Invalid interface name.", 400);
-	
+
 	for (itf = 0; itf < nb_network_interfaces; itf ++)
 		if (strcmp(network_interfaces[itf].name, name) == 0)
 			break;
@@ -608,7 +616,7 @@ static enum MHD_Result get_dns_address(struct MHD_Connection *connection)
 
 
 
-static enum MHD_Result set_dns_address(struct MHD_Connection *connection)
+static enum MHD_Result put_dns_address(struct MHD_Connection *connection)
 {
 	FILE *fp;
 
@@ -633,7 +641,7 @@ static enum MHD_Result set_dns_address(struct MHD_Connection *connection)
 
 
 
-static enum MHD_Result is_interface_wireless(struct MHD_Connection *connection)
+static enum MHD_Result get_interface_wireless_flag(struct MHD_Connection *connection)
 {
 	char pathname[256];
 
@@ -663,7 +671,7 @@ static enum MHD_Result is_interface_wireless(struct MHD_Connection *connection)
 
 #define IW_SSID_PREFIX   "SSID: "
 
-static enum MHD_Result scan_wifi(struct MHD_Connection *connection)
+static enum MHD_Result get_wifi_scan(struct MHD_Connection *connection)
 {
 	char command[256];
 	FILE *fp;
@@ -723,7 +731,7 @@ static enum MHD_Result scan_wifi(struct MHD_Connection *connection)
 
 
 
-static enum MHD_Result connect_wifi(struct MHD_Connection *connection)
+static enum MHD_Result post_wifi_connection(struct MHD_Connection *connection)
 {
 	FILE *fp = NULL;
 	FILE *pp = NULL;
@@ -732,11 +740,11 @@ static enum MHD_Result connect_wifi(struct MHD_Connection *connection)
 	const char *name = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
 	if (name == NULL)
 	        return send_rest_error(connection, "Missing interface name.", 400);
-			
+
 	for (int i = 0; name[i] != '\0'; i++)
 		if ((name[i] == '/') || ( name == ';'))
 			return send_rest_error(connection, "Invalid interface name.", 400);
-	
+
 	const char *ssid = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "ssid");
 	if (ssid == NULL)
 	        return send_rest_error(connection, "Missing 'ssid' param.", 400);
@@ -772,7 +780,7 @@ static enum MHD_Result connect_wifi(struct MHD_Connection *connection)
 }
 
 
-static enum MHD_Result disconnect_wifi(struct MHD_Connection *connection)
+static enum MHD_Result delete_wifi_connection(struct MHD_Connection *connection)
 {
 	FILE *fp;
 	char line[256];
@@ -804,11 +812,11 @@ static enum MHD_Result get_wifi_quality(struct MHD_Connection *connection)
 	const char *name = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
 	if (name == NULL)
 	        return send_rest_error(connection, "Missing interface name.", 400);
-			
+
 	for (int i = 0; name[i] != '\0'; i++)
 		if ((name[i] == '/') || ( name == ';'))
 			return send_rest_error(connection, "Invalid interface name.", 400);
-		
+
 	fp = fopen("/proc/net/wireless", "r");
 	if (fp == NULL)
 	        return send_rest_error(connection, "Unable to open 'wireless' file.", 500);
@@ -865,7 +873,7 @@ static enum MHD_Result get_wifi_access_point(struct MHD_Connection *connection)
 
 
 
-static enum MHD_Result set_wifi_access_point(struct MHD_Connection *connection)
+static enum MHD_Result put_wifi_access_point(struct MHD_Connection *connection)
 {
 }
 
@@ -874,7 +882,7 @@ static enum MHD_Result set_wifi_access_point(struct MHD_Connection *connection)
 static int get_ip_and_netmask(int itf)
 {
 	int ret = -1;
-	
+
 	struct ifaddrs *ifaddr;
 
 	if (getifaddrs(&ifaddr) == 0) {
