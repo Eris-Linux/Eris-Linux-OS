@@ -1,0 +1,20 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:             eris-wifi-monitor
+# Required-Start:
+# Required-Stop:
+# Default-Start:        2 3 4 5
+# Default-Stop:         1
+# Short-Description:
+### END INIT INFO
+#
+
+if [ "$1" = "start" ] || [ ! -f "/.first-boot" ]
+then
+        /usr/sbin/eris-wifi-monitor &
+fi
+
+if [ "$1" = "stop" ]
+then
+        killall wpa_supplicant 2>/dev/null
+fi

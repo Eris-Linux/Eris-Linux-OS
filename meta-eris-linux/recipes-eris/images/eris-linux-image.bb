@@ -88,6 +88,7 @@ IMAGE_INSTALL:append = " eris-ntp"
 IMAGE_INSTALL:append = " early-init"
 IMAGE_INSTALL:append = " eris-first-boot"
 IMAGE_INSTALL:append = " eris-configuration-files"
+IMAGE_INSTALL:append = " eris-wifi-monitor"
 IMAGE_INSTALL:append = " usb-key-automount"
 
 IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-devel', ' rw-ro', '', d)}"

@@ -1,0 +1,85 @@
+#! /bin/sh
+#
+# Handle Wifi interface in order to connect to network described in
+# /home/root/wpa_supplicant.conf as follows:
+#
+#  network={
+#    ssid="my-ssid"
+#    psk="passphrase"
+#  }
+#  [...]
+#
+# Note that the passphrase should be hashed with:
+#  `wpa_passphrase MYSSID passphrase`
+
+
+OUTPUT=/var/log/wifi-status
+WLAN=wlan0
+
+while true
+do
+	while ! grep 'ssid=' /etc/wpa_supplicant.conf >/dev/null 2>&1
+	do
+		sleep 30
+		continue
+	done
+
+	killall wpa_supplicant 2>/dev/null
+
+	while [ ! -e  /sys/class/net/${WLAN} ]
+	do
+		echo "$0: Waiting for Wifi interface." >${OUTPUT}
+		sleep 10
+	done
+
+	ip link set dev ${WLAN} down >/dev/null 2>&1
+	sleep 2
+
+	ip link set dev ${WLAN} up >/dev/null 2>&1
+	sleep 2
+
+	while ip link show dev ${WLAN} 2>/dev/null | grep ',DOWN'
+	do
+		echo "$0: Waiting for Wifi interface to initialize." >${OUTPUT}
+		ip link set dev ${WLAN} up >/dev/null 2>&1
+		sleep 2
+		if [ ! -e  /sys/class/net/${WLAN} ]
+		then
+			break
+		fi
+	done
+
+	if [ ! -e  /sys/class/net/${WLAN} ]
+	then
+		continue
+	fi
+
+	echo "$0: Trying to connect to Wifi network." >${OUTPUT}
+
+	wpa_supplicant -B -i ${WLAN} -c /etc/wpa_supplicant.conf
+
+	ifup wlan0
+
+	while [ $(cat /sys/class/net/${WLAN}/link_mode) = "0" ]
+	do
+		sleep 3
+		if [ ! -e  /sys/class/net/${WLAN} ]
+                then
+                        break
+                fi
+		ifdown wlan0 >/dev/null 2>&1
+		ifup wlan0 >/dev/null 2>&1
+	done
+
+	if [ ! -e  /sys/class/net/${WLAN} ]
+        then
+                continue
+        fi
+
+	echo "$0: Wifi link ok." > ${OUTPUT}
+
+	while [ -e /sys/class/net/${WLAN} ]
+	do
+		sleep 10
+	done
+done
