@@ -79,22 +79,22 @@ enum MHD_Result sbom_rest_api(struct MHD_Connection *connection, const char *url
 	if (strcmp(method, "GET") != 0)
 		return MHD_NO;
 
-	if (strcmp(url, "/api/sbom/package-list") == 0)
+	if (strcmp(url, "/api/sbom/package/list") == 0)
 		return get_packages_list(connection, url);
 
-	if (strcmp(url, "/api/sbom/package-version") == 0)
+	if (strcmp(url, "/api/sbom/package/version") == 0)
 		return get_package_version(connection, url);
 
-	if (strcmp(url, "/api/sbom/package-recipe") == 0)
+	if (strcmp(url, "/api/sbom/package/recipe") == 0)
 		return get_package_recipe(connection, url);
 
-	if (strcmp(url, "/api/sbom/package-licenses") == 0)
+	if (strcmp(url, "/api/sbom/package/licenses") == 0)
 		return get_package_licenses(connection, url);
 
-	if (strcmp(url, "/api/sbom/license-list") == 0)
+	if (strcmp(url, "/api/sbom/license/list") == 0)
 		return get_licenses_list(connection, url);
 
-	if (strcmp(url, "/api/sbom/license-text") == 0)
+	if (strcmp(url, "/api/sbom/license/text") == 0)
 		return get_license_text(connection, url);
 
 	return MHD_NO;
