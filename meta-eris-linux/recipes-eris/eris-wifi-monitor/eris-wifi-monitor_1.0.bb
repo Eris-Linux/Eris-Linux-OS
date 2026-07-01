@@ -1,6 +1,7 @@
 SUMMARY = "Eris Wifi monitor"
 AUTHOR = "Christophe BLAESS"
-DESCRIPTION = "Monitor to handle network connection through Wifi."
+DESCRIPTION = "Handle network connection using Wifi interface."
+
 LICENSE = "LGPL-2.1-only"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/${LICENSE};md5=1a6d268fd218675ffea8be556788b780"
 
@@ -20,3 +21,4 @@ do_install:append() {
 	install -d ${D}${sbindir}
 	install -m 755 ${WORKDIR}/eris-wifi-monitor ${D}${sbindir}/
 }
+

@@ -1,4 +1,9 @@
 #! /bin/sh
+#
+# Run Eris Wifi Monitor
+#
+# (c) 2025-2026 Logilin.
+#
 ### BEGIN INIT INFO
 # Provides:             eris-wifi-monitor
 # Required-Start:
@@ -16,5 +21,6 @@ fi
 
 if [ "$1" = "stop" ]
 then
+	killall eris-wifi-monitor 2>/dev/null
         killall wpa_supplicant 2>/dev/null
 fi

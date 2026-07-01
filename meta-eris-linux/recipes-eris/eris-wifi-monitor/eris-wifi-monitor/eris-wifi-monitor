@@ -1,7 +1,11 @@
 #! /bin/sh
 #
+# Eris Wifi Monitor
+#
+# (c) 2025-2026 Logilin.
+#
 # Handle Wifi interface in order to connect to network described in
-# /home/root/wpa_supplicant.conf as follows:
+# `/etc/wpa_supplicant.conf` as follows:
 #
 #  network={
 #    ssid="my-ssid"
@@ -10,7 +14,7 @@
 #  [...]
 #
 # Note that the passphrase should be hashed with:
-#  `wpa_passphrase MYSSID passphrase`
+#  `wpa_passphrase <SSID> <passphrase>`
 
 
 OUTPUT=/var/log/wifi-status
@@ -20,8 +24,7 @@ while true
 do
 	while ! grep 'ssid=' /etc/wpa_supplicant.conf >/dev/null 2>&1
 	do
-		sleep 30
-		continue
+		sleep 31
 	done
 
 	killall wpa_supplicant 2>/dev/null
@@ -29,7 +32,7 @@ do
 	while [ ! -e  /sys/class/net/${WLAN} ]
 	do
 		echo "$0: Waiting for Wifi interface." >${OUTPUT}
-		sleep 10
+		sleep 13
 	done
 
 	ip link set dev ${WLAN} down >/dev/null 2>&1
@@ -80,6 +83,7 @@ do
 
 	while [ -e /sys/class/net/${WLAN} ]
 	do
-		sleep 10
+		sleep 19
 	done
 done
+
