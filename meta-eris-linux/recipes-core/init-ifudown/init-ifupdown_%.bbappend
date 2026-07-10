@@ -10,7 +10,9 @@ do_install:append() {
 
 	install -d ${D}${sysconfdir}/network
 
-	echo "auto lo"                        >  ${D}${sysconfdir}/network/interfaces
+	echo "## This is a default network configuration installed by Eris Linux." > ${D}${sysconfdir}/network/interfaces
+	echo "auto lo"                        >> ${D}${sysconfdir}/network/interfaces
 	echo "iface lo inet loopback"         >> ${D}${sysconfdir}/network/interfaces
 	echo ""                               >> ${D}${sysconfdir}/network/interfaces
 }
+

@@ -6,7 +6,7 @@
 ### BEGIN INIT INFO
 # Provides:          rmnologin
 # Required-Start:    $remote_fs $all
-# Required-Stop: 
+# Required-Stop:
 # Default-Start:     2 3 4 5
 # Default-Stop:
 # Short-Description: Remove /etc/nologin at boot
