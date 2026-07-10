@@ -16,8 +16,8 @@ fi
 
 mount none /etc -t overlay -o lowerdir=/etc,workdir="${WORKDIR}",upperdir="${UPPERDIR}"
 
-# Force /etc/eris-linux/network and /etc/eris-linux/organization-id to be on the overlay.
-# This is needed on the first boot to save the parameters written by `prepare-image`.
+# Force all files configured during image preparation to be on the overlay to survive future updates.
 #
 touch /etc/eris-linux/network
 touch /etc/eris-linux/organization-id
+touch /etc/wpa_supplicant.conf
