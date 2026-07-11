@@ -199,8 +199,9 @@ static int load_eris_network_configuration(void)
 			break;
 		network_interfaces = newitf;
 		memset(&(network_interfaces[nb_network_interfaces]), 0, sizeof(network_interface_t));
-		strncpy(network_interfaces[nb_network_interfaces].name, &(line[start]), INTERFACE_NAME_LENGTH - 1);
-		network_interfaces[nb_network_interfaces].name[INTERFACE_NAME_LENGTH - 1] = '\0';
+
+		strncpy(network_interfaces[nb_network_interfaces].name, &(line[start]), sizeof(network_interfaces[nb_network_interfaces].name) - 1);
+		network_interfaces[nb_network_interfaces].name[sizeof(network_interfaces[nb_network_interfaces].name) - 1] = '\0';
 		nb_network_interfaces++;
 
 		// At Boot?
