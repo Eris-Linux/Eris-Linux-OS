@@ -78,7 +78,9 @@ then
 		w
 	EOF8
 
-	source /etc/eris-linux/encryption
+	mount ${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT}  /boot
+
+	source /boot/data-encryption
 	if [ "${ERIS_DATA_CRYPT}" = "y" ]
 	then
 		mount none /run -t tmpfs
