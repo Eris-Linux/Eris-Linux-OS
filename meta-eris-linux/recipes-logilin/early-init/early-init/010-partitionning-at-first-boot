@@ -65,7 +65,7 @@ then
 	while true; do : ; done
 fi
 
-data_part=$(fdisk -l /dev/mmcblk0 | awk '($1 == "'${data_part}'") { print $6 }')
+part_type=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}'") { print $6 }')
 
 # At second boot we initialize the crypted data partition
 #
@@ -94,7 +94,7 @@ then
 		fi
 
 		echo "Preparing data partition for encryption."
-		dd if=/dev/zero of=${data_part} bs=1M count=4 >/dev/null 2>&1
+		dd if=/dev/zero of=${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA} bs=1M count=4 >/dev/null 2>&1
 		/usr/sbin/cryptsetup luksFormat  \
 			--batch-mode             \
 			--type luks2             \
@@ -102,7 +102,7 @@ then
 			--key-size 512           \
 			--hash sha256            \
 			--key-file /tmp/key.bin  \
-			${data_part}
+			${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}
 		rm -f /tmp/key.bin
 		umount /var
 		umount /run
