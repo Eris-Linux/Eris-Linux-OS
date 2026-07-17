@@ -14,20 +14,24 @@ then
 	REDIRECT=">/dev/null 2>&1"
 	REDIRECT=""
 
-	# Remove: System-B, Data.
+	# Remove System-B
+	#
 	fdisk ${ERIS_STORAGE_DEVICE} >/dev/null 2>&1 <<- EOF1
 		d
 		${ERIS_PARTITION_SYSTEM_B}
 		w
 	EOF1
 
+	# Remove Data
+	#
 	fdisk ${ERIS_STORAGE_DEVICE} >/dev/null 2>&1 <<- EOF2
 		d
 		${ERIS_PARTITION_DATA}
 		w
 	EOF2
 
-	echo "Create System-B partition"
+	# Create System-B partition
+	#
 	system_b_start=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_SYSTEM_A}'") { printf $3 + 1}' )
 	rootfs_size=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_SYSTEM_A}'") { printf $4 + 1024}' )
 
@@ -40,8 +44,8 @@ then
 		w
 	EOF3
 
-	echo "Create Data partition"
-	# ... and tag the partition with arbitrary type "25"
+	# Create Data partition and tag it with arbitrary type "25"
+	#
 	data_start=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_SYSTEM_B}'") { printf $3 + 1}' )
 	fdisk ${ERIS_STORAGE_DEVICE} ${REDIRECT} <<- EOF4
 		n
@@ -54,7 +58,8 @@ then
 		w
 	EOF4
 
-	echo "Wipe out Data partition"
+	# Wipe out Data partition
+	#
 	dd if=/dev/zero of=${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA} bs=4M count=4
 
 	echo "Reboot"
@@ -65,12 +70,14 @@ then
 	while true; do : ; done
 fi
 
-part_type=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}'") { print $6 }')
+data_part_type=$(fdisk -l ${ERIS_STORAGE_DEVICE} | awk '($1 == "'${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_DATA}'") { print $6 }')
 
-# At second boot we initialize the crypted data partition
+# At second boot we initialize the crypted data partition.
 #
-if [ "${part_type}" = "25" ]
+if [ "${data_part_type}" = "25" ]
 then
+	# Tag data partition with the correct type.
+	#
 	fdisk ${ERIS_STORAGE_DEVICE} 2>/dev/null >&2 <<- EOF8
 		t
 		${ERIS_PARTITION_DATA}
@@ -78,9 +85,12 @@ then
 		w
 	EOF8
 
+	# Mount boot partition in order to read data-encryption file.
+	#
 	mount ${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT}  /boot
-
 	source /boot/data-encryption
+	umount /boot
+
 	if [ "${ERIS_DATA_CRYPT}" = "y" ]
 	then
 		mount none /run -t tmpfs

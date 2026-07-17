@@ -4,7 +4,7 @@
 #
 # Script to mount an overlayfs over `/etc/`.
 # The `/` partition is supposed to be mounted read-only.
-# The `/data` partition is mounted in read-write mode (see script 020).
+# The `/data` partition is mounted in read-write mode (see script 040).
 #
 WORKDIR=/data/overlayfs/etc/workdir
 UPPERDIR=/data/overlayfs/etc/upperdir
