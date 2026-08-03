@@ -6,7 +6,7 @@
 # We use and modify the following environment variables:
 # - boot_attempts: the remaining attempts for candidate_partition.
 # - candidate_partition: the partition number on which we'll try to boot.
-# - rollback_level: the current level of rollback.
+# - rollback_level: the current level of rollback (-1 means "only first partition is available yet").
 # - reset_requested: reset GPIO pressed during boot.
 
 # We use the following variables not saved in environment:
@@ -105,9 +105,9 @@ then
 	setenv  boot_attempts  3
 fi
 
-if test "${rollback_level}" != "0" -a "${rollback_level}" != "1" -a "${rollback_level}" != "2"
+if test "${rollback_level}" != "-1" -a "${rollback_level}" != "0" -a "${rollback_level}" != "1" -a "${rollback_level}" != "2"
 then
-	setenv  rollback_level  0
+	setenv  rollback_level  -1
 fi
 
 
@@ -173,15 +173,25 @@ else
 			fi
 
 		else
-			# Load initramfs to take emergency measures (removable media, etc.)
-			#
-			if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:@@ERIS_BOOT_PART@@ ${ramdisk_addr_r} /@@ERIS_RECOVERY_RAMFS@@
+			if test "${rollback_level}" = "-1"
 			then
-				setenv initramfs_size "${filesize}"
+				# This is one of the first boots. The partition B is not available yet.
+				# Keep trying partition A (the problem is probably a series of power outage).
+				setenv boot_attempts 2
+				saveenv
 				setenv ready_to_boot 1
 			else
-				echo "Unable to load recovery initramfs."
-				setenv ready_to_boot 0
+				# We are in rollback level 2.
+				# Load initramfs to take emergency measures (removable media, etc.)
+				#
+				if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:@@ERIS_BOOT_PART@@ ${ramdisk_addr_r} /@@ERIS_RECOVERY_RAMFS@@
+				then
+					setenv initramfs_size "${filesize}"
+					setenv ready_to_boot 1
+				else
+					echo "Unable to load recovery initramfs."
+					setenv ready_to_boot 0
+				fi
 			fi
 		fi
 	fi
