@@ -57,6 +57,8 @@ start_container()
 
 	if [ -f "${slot_dir}/slot.tar" ]
 	then
+		docker image rm "${slot_name}" >/dev/null 2>&1
+
 		output=$(docker import - ${slot_name} < "${slot_dir}/slot.tar" 2>&1)
 		run_code=$?
 
