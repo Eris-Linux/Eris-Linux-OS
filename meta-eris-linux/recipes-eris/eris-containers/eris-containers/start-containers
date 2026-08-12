@@ -24,34 +24,56 @@ X11_OPT="-e DISPLAY=:0 -v /tmp/.X11-unix:/tmp/.X11-unix"
 
 start_container()
 {
-	local name="slot-${1}"
-	local slot_dir="${SLOTS_DIR}/slot-${1}"
+	local slot="${1}"
+	local slot_name="slot-${slot}"
+	local slot_dir="${SLOTS_DIR}/${slot_name}"
+	local error_file="/run/container-error-${slot}"
+	local tmp_error_file="/run/container-error-${slot}.$$"
 	local id=""
 	local label=""
 	local version=""
-	local options=""
+	local filename=""
+	local b64=""
+	local graphical=""
+	local redirections=""
+	local pîvileged=""
 	local rest=""
 	local count=${MIN_SLOT_NUMBER}
+	local output=""
+	local run_code=0
 
-	if [ "$1" = "" ] || [ $1 -lt ${MIN_SLOT_NUMBER} ] || [ $1 -gt ${MAX_SLOT_NUMBER} ]; then return; fi
+	if [ "${slot}" = "" ] || [ ${slot} -lt ${MIN_SLOT_NUMBER} ] || [ ${slot} -gt ${MAX_SLOT_NUMBER} ]; then return; fi
 
 	while IFS=! read id label version filename b64 graphical redirections privileged
-    do
-		if [ "${count}" = "${1}" ]; then break; fi
+	do
+		if [ "${count}" = "${slot}" ]; then break; fi
 		count=$((count + 1))
 	done < "${CONTAINERS_FILE}"
 
-	if [ "${id}" = "" ] || [ "${id}" = "-1" ]; then return; fi
+
+	if [ "${id}" = "" ] || [ "${id}" = "-1" ]; then
+		rm -f "${error_file}"
+	return; fi
 
 	if [ -f "${slot_dir}/slot.tar" ]
 	then
-		docker import - ${name} < "${slot_dir}/slot.tar"
+		output=$(docker import - ${slot_name} < "${slot_dir}/slot.tar" 2>&1)
+		run_code=$?
+
+		if [ "${run_code}" -ne 0 ]
+		then
+			printf "%d\n" 5 > "${tmp_error_file}"
+			printf "%s" "${output}" >> "${tmp_error_file}"
+			mv  "${tmp_error_file}"  "${error_file}"
+			return
+		fi
 
 		local cmd=""
 		if [ -f "${slot_dir}/slot.cmd" ]
 		then
 			cmd=$(cat "${slot_dir}/slot.cmd")
 		fi
+
 		local docker_opts="--add-host=host.docker.internal:host-gateway"
 		docker_opts="${docker_opts} --mount type=bind,source=${CONTAINERS_STORAGE},target=/data"
 
@@ -62,6 +84,11 @@ start_container()
 
 		for redirection in ${redirections}
 		do
+			local ext_port=""
+			local int_port=""
+			local option=""
+			local protocol=""
+
 			option="${redirection}"
 			# Expected: <external port>:<internal port>/<protocol>
 			ext_port="${option%%:*}"
@@ -86,7 +113,22 @@ start_container()
 			docker_opts="${docker_opts} --privileged"
 		fi
 
-		docker run -t --init --rm ${docker_opts} ${name} ${cmd} > /dev/console 2>/dev/null &
+		output=$(docker run -d --init --rm ${docker_opts} "${slot_name}" ${cmd} 2>&1)
+		run_code=$?
+
+		if [ ${run_code} -eq 0 ]; then
+			rm -f "${error_file}"
+		else
+			if   [ ${run_code} -eq 126 ]; then
+				printf "%d\n" 7 > "${tmp_error_file}"
+			elif [ ${run_code} -eq 127 ]; then
+				printf "%d\n" 8 > "${tmp_error_file}"
+			else
+				printf "%d\n" 6 > "${tmp_error_file}"
+			fi
+			echo "${output}" >> "${tmp_error_file}"
+			mv  "${tmp_error_file}"  "${error_file}"
+		fi
 	fi
 }
 
@@ -113,13 +155,8 @@ start_all_containers()
 stop_container()
 {
 	local name="slot-${1}"
-	local did
 
-	did=$(docker ps | grep "${name}" | cut -f 1 -d ' ')
-	if [ "${did}" !=  "" ]
-	then
-		docker stop -t 5 ${did}
-	fi
+	docker stop -t 5 "${name}" >/dev/null 2>&1
 }
 
 
