@@ -116,7 +116,8 @@ start_container()
 			docker_opts="${docker_opts} --privileged"
 		fi
 
-		output=$(docker run -d --init --rm ${docker_opts} --name "${container_name}" "${slot_name}" ${cmd} 2>&1)
+		docker rm -f "${slot_name}" >/dev/null 2>&1
+		output=$(docker run -d --init ${docker_opts} --name "${container_name}" "${slot_name}" ${cmd} 2>&1)
 		run_code=$?
 
 		if [ ${run_code} -eq 0 ]; then
