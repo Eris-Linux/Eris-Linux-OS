@@ -26,6 +26,7 @@ start_container()
 {
 	local slot="${1}"
 	local slot_name="slot-${slot}"
+	local container_name="cnt-${slot}"
 	local slot_dir="${SLOTS_DIR}/${slot_name}"
 	local error_file="/run/container-error-${slot}"
 	local tmp_error_file="/run/container-error-${slot}.$$"
@@ -115,7 +116,7 @@ start_container()
 			docker_opts="${docker_opts} --privileged"
 		fi
 
-		output=$(docker run -d --init --rm ${docker_opts} "${slot_name}" ${cmd} 2>&1)
+		output=$(docker run -d --init --rm ${docker_opts} --name "${container_name}" "${slot_name}" ${cmd} 2>&1)
 		run_code=$?
 
 		if [ ${run_code} -eq 0 ]; then
