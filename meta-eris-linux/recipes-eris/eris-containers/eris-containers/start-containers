@@ -124,10 +124,13 @@ start_container()
 			rm -f "${error_file}"
 		else
 			if   [ ${run_code} -eq 126 ]; then
+				# Invalid command.
 				printf "%d\n" 7 > "${tmp_error_file}"
 			elif [ ${run_code} -eq 127 ]; then
+				# Missing app.
 				printf "%d\n" 8 > "${tmp_error_file}"
 			else
+				# Running error.
 				printf "%d\n" 6 > "${tmp_error_file}"
 			fi
 			echo "${output}" >> "${tmp_error_file}"
