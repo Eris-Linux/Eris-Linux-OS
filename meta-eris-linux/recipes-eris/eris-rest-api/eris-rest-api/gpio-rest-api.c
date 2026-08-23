@@ -188,7 +188,7 @@ static enum MHD_Result get_gpio_list(struct MHD_Connection *connection)
 	for (int i = 0; i < Gpio_count; i++) {
 		if (i > 0)
 			addsnprintf(&reply, &size, &pos, ",");
-		addsnprintf(&reply, &size, &pos, "{ \"id\": \"%s\", \"name\": \"%s\" } ", Eris_gpios[i].id, Eris_gpios[i].name);
+		addsnprintf(&reply, &size, &pos, "{\"id\":\"%s\",\"name\":\"%s\"}", Eris_gpios[i].id, Eris_gpios[i].name);
 	}
 	addsnprintf(&reply, &size, &pos, "]");
 	pthread_mutex_unlock(&Gpio_mutex);
