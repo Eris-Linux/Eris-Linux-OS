@@ -161,9 +161,9 @@ start_all_containers()
 
 stop_container()
 {
-	local name="slot-${1}"
+	local name="cnt-${1}"
 
-	docker stop -t 5 "${name}" >/dev/null 2>&1
+	docker rm -f "${name}" >/dev/null 2>&1
 }
 
 
