@@ -119,6 +119,7 @@ static int initialize_sbom(void)
 
 		while (fgets(line, sizeof(line), fp) != NULL) {
 
+			line[strcspn(line, "\n")] = '\0';
 			if (line[0] == '\0') {
 				if (package_name[0] != '\0')
 					add_package(package_name, package_version, recipe_name, license_details);
@@ -126,10 +127,9 @@ static int initialize_sbom(void)
 				continue;
 			}
 
-			line[strcspn(line, "\n")] = '\0';
 
 			if (strncmp(line, PACKAGE_NAME_PREFIX, strlen(PACKAGE_NAME_PREFIX)) == 0) {
-				strncpy(package_name, &line[strlen(PACKAGE_VERSION_PREFIX)], sizeof(package_name));
+				strncpy(package_name, &line[strlen(PACKAGE_NAME_PREFIX)], sizeof(package_name));
 				package_name[sizeof(package_name) - 1] = '\0';
 
 			} else if (strncmp(line, PACKAGE_VERSION_PREFIX, strlen(PACKAGE_VERSION_PREFIX)) == 0) {
@@ -219,12 +219,12 @@ static void add_package(const char *package_name, const char *package_version, c
 		int stop = start + 1;
 		while ((pkg.licenses[stop] != ' ') && (pkg.licenses[stop] != '\0')) {
 			stop++;
-			char save = pkg.licenses[stop];
-			pkg.licenses[stop] = '\0';
-			add_license_if_not_exists(&pkg.licenses[start]);
-			pkg.licenses[stop] = save;
-			start = stop;
 		}
+		char save = pkg.licenses[stop];
+		pkg.licenses[stop] = '\0';
+		add_license_if_not_exists(&pkg.licenses[start]);
+		pkg.licenses[stop] = save;
+		start = stop;
 	}
 
 
