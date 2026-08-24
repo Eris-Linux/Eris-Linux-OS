@@ -34,6 +34,7 @@
 #define IP_ADDRESS_LENGTH   INET6_ADDRSTRLEN
 #define EOL_CHAR(x) ((x == '\0') || (x == 0x23) || (x == '\n') || (x == '\r'))
 
+
 // ---------------------- Private types definitions.
 
 typedef struct {
@@ -76,8 +77,8 @@ static int get_default_route  (int itf);
 
 // ---------------------- Private variables declarations.
 
-static  network_interface_t *network_interfaces = NULL;
-static  int                  nb_network_interfaces = 0;
+static  network_interface_t *_Network_interfaces = NULL;
+static  int                  _Nb_network_interfaces = 0;
 
 
 // ---------------------- Public methods
@@ -155,17 +156,19 @@ static int load_eris_network_configuration(void)
 	FILE *fp;
 	char line[1024];
 
-	if (network_interfaces != NULL) {
-		free(network_interfaces);
-		network_interfaces = NULL;
-		nb_network_interfaces = 0;
+	if (_Network_interfaces != NULL) {
+		free(_Network_interfaces);
+		_Network_interfaces = NULL;
+		_Nb_network_interfaces = 0;
 	}
 
 	fp = fopen(ERIS_NETWORK_CONFIG_FILE, "r");
 	if (fp == NULL)
 		return 0;
 
-	while (fgets(line, 1023, fp) != NULL) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		line[sizeof(line) - 1] = '\0';
+
 		// <interface> <atboot> <inet> <method> <ip addr> <netmask> <gateway>
 		// <atboot> = { 'atboot', 'notatboot' }
 		// <ip class> = { 'ipv4', 'ipv6' }
@@ -180,72 +183,78 @@ static int load_eris_network_configuration(void)
 			continue;
 
 		// Interface name.
-
+		//
 		int end;
 		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[end])) ; end ++)
 			;
 		line[end] = '\0';
 
 		int itf;
-		for (itf = 0; itf < nb_network_interfaces; itf++)
-			if (strcmp(&(line[start]), network_interfaces[itf].name) == 0)
+		for (itf = 0; itf < _Nb_network_interfaces; itf++)
+			if (strcmp(&(line[start]), _Network_interfaces[itf].name) == 0)
 				break;
-		if (itf != nb_network_interfaces)
+		if (itf != _Nb_network_interfaces)
 			continue;
 
 		network_interface_t *newitf;
-		newitf = realloc(network_interfaces, (nb_network_interfaces + 1) * sizeof (network_interface_t));
+		newitf = realloc(_Network_interfaces, (_Nb_network_interfaces + 1) * sizeof (network_interface_t));
 		if (newitf == NULL)
 			break;
-		network_interfaces = newitf;
-		memset(&(network_interfaces[nb_network_interfaces]), 0, sizeof(network_interface_t));
+		_Network_interfaces = newitf;
+		memset(&(_Network_interfaces[_Nb_network_interfaces]), 0, sizeof(network_interface_t));
 
-		strncpy(network_interfaces[nb_network_interfaces].name, &(line[start]), sizeof(network_interfaces[nb_network_interfaces].name) - 1);
-		network_interfaces[nb_network_interfaces].name[sizeof(network_interfaces[nb_network_interfaces].name) - 1] = '\0';
-		nb_network_interfaces++;
+		strncpy(_Network_interfaces[_Nb_network_interfaces].name, &(line[start]), sizeof(_Network_interfaces[_Nb_network_interfaces].name) - 1);
+		_Network_interfaces[_Nb_network_interfaces].name[sizeof(_Network_interfaces[_Nb_network_interfaces].name) - 1] = '\0';
+
+		_Nb_network_interfaces++;
 
 		// At Boot?
+		//
 		for (start = end + 1; isspace(line[start]); start ++)
 			;
 		if (EOL_CHAR(line[start]))
 			continue;
-		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[start])); end ++)
+		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[end])); end ++)
 			;
 		line[end] = '\0';
-		network_interfaces[nb_network_interfaces - 1].at_boot = (strcmp(&(line[start]), "atboot") == 0);
+		_Network_interfaces[_Nb_network_interfaces - 1].at_boot = (strcmp(&(line[start]), "atboot") == 0);
 
-		// ipv4/ipv6 ?
+		// IPv6?
+		//
 		for (start = end + 1; isspace(line[start]); start ++)
 			;
 		if (EOL_CHAR(line[start]))
 			continue;
-		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[start])); end ++)
+		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[end])); end ++)
 			;
 		line[end] = '\0';
-		network_interfaces[nb_network_interfaces - 1].ipv6 = (strcmp(&(line[start]), "ipv6") == 0);
+		_Network_interfaces[_Nb_network_interfaces - 1].ipv6 = (strcmp(&(line[start]), "ipv6") == 0);
 
 		// DHCP?
+		//
 		for (start = end + 1; isspace(line[start]); start ++)
 			;
 		if (EOL_CHAR(line[start]))
 			continue;
-		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[start])); end ++)
+		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[end])); end ++)
 			;
 		line[end] = '\0';
-		network_interfaces[nb_network_interfaces - 1].dhcp = (strcmp(&(line[start]), "dhcp") == 0);
+		_Network_interfaces[_Nb_network_interfaces - 1].dhcp = (strcmp(&(line[start]), "dhcp") == 0);
 
 		// IP address
+		//
 		for (start = end + 1; isspace(line[start]); start ++)
 			;
 		if (EOL_CHAR(line[start]))
 			continue;
-		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[start])); end ++)
+		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[end])); end ++)
 			;
 		line[end] = '\0';
-		strncpy(network_interfaces[nb_network_interfaces - 1].ip_address, &(line[start]), IP_ADDRESS_LENGTH - 1);
-		network_interfaces[nb_network_interfaces - 1].ip_address[IP_ADDRESS_LENGTH - 1] = '\0';
+		strncpy(_Network_interfaces[_Nb_network_interfaces - 1].ip_address, &(line[start]), IP_ADDRESS_LENGTH - 1);
+		_Network_interfaces[_Nb_network_interfaces - 1].ip_address[IP_ADDRESS_LENGTH - 1] = '\0';
 
 		// IP netmask
+		//
 		for (start = end + 1; isspace(line[start]); start ++)
 			;
 		if (EOL_CHAR(line[start]))
@@ -253,10 +262,11 @@ static int load_eris_network_configuration(void)
 		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[start])); end ++)
 			;
 		line[end] = '\0';
-		strncpy(network_interfaces[nb_network_interfaces - 1].ip_netmask, &(line[start]), IP_ADDRESS_LENGTH - 1);
-		network_interfaces[nb_network_interfaces - 1].ip_netmask[IP_ADDRESS_LENGTH - 1] = '\0';
+		strncpy(_Network_interfaces[_Nb_network_interfaces - 1].ip_netmask, &(line[start]), IP_ADDRESS_LENGTH - 1);
+		_Network_interfaces[_Nb_network_interfaces - 1].ip_netmask[IP_ADDRESS_LENGTH - 1] = '\0';
 
 		// IP gateway
+		//
 		for (start = end + 1; isspace(line[start]); start ++)
 			;
 		if (EOL_CHAR(line[start]))
@@ -264,8 +274,8 @@ static int load_eris_network_configuration(void)
 		for (end = start; (! isspace(line[end])) && (! EOL_CHAR(line[start])); end ++)
 			;
 		line[end] = '\0';
-		strncpy(network_interfaces[nb_network_interfaces - 1].ip_gateway, &(line[start]), IP_ADDRESS_LENGTH - 1);
-		network_interfaces[nb_network_interfaces - 1].ip_gateway[IP_ADDRESS_LENGTH - 1] = '\0';
+		strncpy(_Network_interfaces[_Nb_network_interfaces - 1].ip_gateway, &(line[start]), IP_ADDRESS_LENGTH - 1);
+		_Network_interfaces[_Nb_network_interfaces - 1].ip_gateway[IP_ADDRESS_LENGTH - 1] = '\0';
 	}
 	fclose(fp);
 	return 0;
@@ -284,20 +294,20 @@ static int save_eris_network_configuration(void)
 		fprintf(stderr, "Unable to open '%s'\n", ERIS_NETWORK_CONFIG_FILE);
 		return -1;
 	}
-	for (int i = 0; i < nb_network_interfaces; i++) {
+	for (int i = 0; i < _Nb_network_interfaces; i++) {
 		// <interface> <atboot> <inet> <method> <ip addr> <netmask> <gateway>
 		// <atboot> = { 'atboot', 'notatboot' }
 		// <ip class> = { 'ipv4', 'ipv6' }
 		// <method> = { 'static', 'dhcp' }
 
 		fprintf(fp, "%s %s %s %s %s %s %s\n",
-			network_interfaces[i].name,
-			network_interfaces[i].at_boot ? "atboot" : "notatboot",
-			network_interfaces[i].ipv6    ? "ipv6"   : "ipv4",
-			network_interfaces[i].dhcp    ? "dhcp"   : "static",
-			network_interfaces[i].ip_address,
-			network_interfaces[i].ip_netmask,
-			network_interfaces[i].ip_gateway);
+			_Network_interfaces[i].name,
+			_Network_interfaces[i].at_boot ? "atboot" : "notatboot",
+			_Network_interfaces[i].ipv6    ? "ipv6"   : "ipv4",
+			_Network_interfaces[i].dhcp    ? "dhcp"   : "static",
+			_Network_interfaces[i].ip_address,
+			_Network_interfaces[i].ip_netmask,
+			_Network_interfaces[i].ip_gateway);
 	}
 	fclose(fp);
 	return  0;
@@ -317,22 +327,22 @@ static int write_system_network_configuration(void)
 
 	fprintf(fp, "auto lo\niface lo inet loopback\n\n");
 
-	for (int i = 0; i < nb_network_interfaces; i++) {
-		if (network_interfaces[i].at_boot) {
-			fprintf(fp, "auto %s\n", network_interfaces[i].name);
+	for (int i = 0; i < _Nb_network_interfaces; i++) {
+		if (_Network_interfaces[i].at_boot) {
+			fprintf(fp, "auto %s\n", _Network_interfaces[i].name);
 		}
-		if (network_interfaces[i].dhcp) {
+		if (_Network_interfaces[i].dhcp) {
 			fprintf(fp, "iface %s %s dhcp\n",
-				network_interfaces[i].name,
-				network_interfaces[i].ipv6 ? "inet6"   : "inet");
+				_Network_interfaces[i].name,
+				_Network_interfaces[i].ipv6 ? "inet6"   : "inet");
 		} else {
 			fprintf(fp, "iface %s %s static\n",
-				network_interfaces[i].name,
-				network_interfaces[i].ipv6 ? "inet6"   : "inet");
+				_Network_interfaces[i].name,
+				_Network_interfaces[i].ipv6 ? "inet6"   : "inet");
 			fprintf(fp, "\t address %s\n\t netmask %s\n\t gateway %s\n",
-				network_interfaces[i].ip_address,
-				network_interfaces[i].ip_netmask,
-				network_interfaces[i].ip_gateway);
+				_Network_interfaces[i].ip_address,
+				_Network_interfaces[i].ip_netmask,
+				_Network_interfaces[i].ip_gateway);
 		}
 		fprintf(fp, "\n");
 	}
@@ -394,10 +404,10 @@ static enum MHD_Result get_network_interface_status(struct MHD_Connection *conne
 		if ((name[i] == '/') || ( name == ';'))
 			return send_rest_error(connection, "Invalid interface name.", 400);
 
-	for (itf = 0; itf < nb_network_interfaces; itf ++)
-		if (strcmp(network_interfaces[itf].name, name) == 0)
+	for (itf = 0; itf < _Nb_network_interfaces; itf ++)
+		if (strcmp(_Network_interfaces[itf].name, name) == 0)
 			break;
-	if (itf >= nb_network_interfaces) {
+	if (itf >= _Nb_network_interfaces) {
 		return send_rest_error(connection, "Unknown interface.", 404);
 	}
 
@@ -421,9 +431,9 @@ static enum MHD_Result get_network_interface_status(struct MHD_Connection *conne
 		if (get_ip_and_netmask(itf) < 0)
 			return send_rest_error(connection, "Unable to obtain interface address.", 500);
 		addsnprintf(&reply, &size, &pos, "up ");
-		addsnprintf(&reply, &size, &pos, "%s %s ", network_interfaces[itf].ip_address, network_interfaces[itf].ip_netmask);
+		addsnprintf(&reply, &size, &pos, "%s %s ", _Network_interfaces[itf].ip_address, _Network_interfaces[itf].ip_netmask);
 		if (get_default_route(itf) == 0)
-			addsnprintf(&reply, &size, &pos, "%s ", network_interfaces[itf].ip_gateway);
+			addsnprintf(&reply, &size, &pos, "%s ", _Network_interfaces[itf].ip_gateway);
 	} else {
 		addsnprintf(&reply, &size, &pos, "down ");
 	}
@@ -477,36 +487,36 @@ static enum MHD_Result get_network_interface_config(struct MHD_Connection *conne
 	if (name == NULL)
 	        return send_rest_error(connection, "Missing interface name.", 400);
 
-	for (itf = 0; itf < nb_network_interfaces; itf ++)
-		if (strcmp(network_interfaces[itf].name, name) == 0)
+	for (itf = 0; itf < _Nb_network_interfaces; itf ++)
+		if (strcmp(_Network_interfaces[itf].name, name) == 0)
 			break;
-	if (itf >= nb_network_interfaces)
+	if (itf >= _Nb_network_interfaces)
 	        return send_rest_error(connection, "Unknown interface.", 404);
 
 	addsnprintf(&reply, &size, &pos, "%s %s ",
 		name,
-		network_interfaces[itf].at_boot ? "atboot" : "ondemand");
+		_Network_interfaces[itf].at_boot ? "atboot" : "ondemand");
 
-	if (network_interfaces[itf].dhcp) {
+	if (_Network_interfaces[itf].dhcp) {
 		addsnprintf(&reply, &size, &pos, "dhcp");
 	} else {
 		addsnprintf(&reply, &size, &pos, "static %s ",
-			network_interfaces[itf].ipv6 ? "ipv6" : "ipv4");
+			_Network_interfaces[itf].ipv6 ? "ipv6" : "ipv4");
 
-		if (network_interfaces[itf].ip_address[0] == '\0')
+		if (_Network_interfaces[itf].ip_address[0] == '\0')
 			addsnprintf(&reply, &size, &pos, "0.0.0.0 ");
 		else
-			addsnprintf(&reply, &size, &pos, "%s ", network_interfaces[itf].ip_address);
+			addsnprintf(&reply, &size, &pos, "%s ", _Network_interfaces[itf].ip_address);
 
-		if (network_interfaces[itf].ip_netmask[0] == '\0')
+		if (_Network_interfaces[itf].ip_netmask[0] == '\0')
 			addsnprintf(&reply, &size, &pos, "0.0.0.0 ");
 		else
-			addsnprintf(&reply, &size, &pos, "%s ", network_interfaces[itf].ip_netmask);
+			addsnprintf(&reply, &size, &pos, "%s ", _Network_interfaces[itf].ip_netmask);
 
-		if (network_interfaces[itf].ip_gateway[0] == '\0')
+		if (_Network_interfaces[itf].ip_gateway[0] == '\0')
 			addsnprintf(&reply, &size, &pos, "0.0.0.0 ");
 		else
-			addsnprintf(&reply, &size, &pos, "%s ", network_interfaces[itf].ip_gateway);
+			addsnprintf(&reply, &size, &pos, "%s ", _Network_interfaces[itf].ip_gateway);
 	}
 
 	int ret = send_rest_response(connection, reply);
@@ -529,11 +539,11 @@ static enum MHD_Result put_network_interface_config(struct MHD_Connection *conne
 		if ((name[i] == '/') || ( name == ';'))
 			return send_rest_error(connection, "Invalid interface name.", 400);
 
-	for (itf = 0; itf < nb_network_interfaces; itf ++)
-		if (strcmp(network_interfaces[itf].name, name) == 0)
+	for (itf = 0; itf < _Nb_network_interfaces; itf ++)
+		if (strcmp(_Network_interfaces[itf].name, name) == 0)
 			break;
 
-	if (itf >= nb_network_interfaces)
+	if (itf >= _Nb_network_interfaces)
 		return send_rest_error(connection, "Unkown interface.", 404);
 
 	const char *activate = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "activate");
@@ -548,41 +558,41 @@ static enum MHD_Result put_network_interface_config(struct MHD_Connection *conne
 	if ((strcmp(mode, "static") != 0) && (strcmp(mode, "dhcp") != 0))
 		return send_rest_error(connection, "Invalid 'mode' parameter (must be 'dhcp' or 'static').", 400);
 
-	network_interfaces[itf].at_boot = (strcasecmp(activate, "atboot") == 0);
-	network_interfaces[itf].dhcp = (strcmp(mode, "dhcp") == 0);
+	_Network_interfaces[itf].at_boot = (strcasecmp(activate, "atboot") == 0);
+	_Network_interfaces[itf].dhcp = (strcmp(mode, "dhcp") == 0);
 
-	if (! network_interfaces[itf].dhcp) {
+	if (! _Network_interfaces[itf].dhcp) {
 
 		const char *ip = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "ip");
 		if (ip == NULL)
 			return send_rest_error(connection, "Missing 'ip' parameter.", 400);
 		if ((strcmp(ip, "ipv4") != 0) && (strcmp(ip, "ipv6") != 0))
 			return send_rest_error(connection, "Invalid 'ip' parameter (must be 'ipv4' or 'ipv6').", 400);
-		network_interfaces[itf].ipv6 = (strcmp(ip, "ipv6") == 0);
+		_Network_interfaces[itf].ipv6 = (strcmp(ip, "ipv6") == 0);
 
 		const char *address = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "address");
 		if (address == NULL)
 			return send_rest_error(connection, "Missing 'address' parameter.", 400);
-		strncpy(network_interfaces[itf].ip_address, address, IP_ADDRESS_LENGTH);
-		network_interfaces[itf].ip_address[IP_ADDRESS_LENGTH - 1] = '\0';
+		strncpy(_Network_interfaces[itf].ip_address, address, IP_ADDRESS_LENGTH);
+		_Network_interfaces[itf].ip_address[IP_ADDRESS_LENGTH - 1] = '\0';
 
 		const char *netmask = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "netmask");
 		if (netmask == NULL)
 	        return send_rest_error(connection, "Missing 'netmask' parameter.", 400);
-		strncpy(network_interfaces[itf].ip_netmask, netmask, IP_ADDRESS_LENGTH);
-		network_interfaces[itf].ip_netmask[IP_ADDRESS_LENGTH - 1] = '\0';
+		strncpy(_Network_interfaces[itf].ip_netmask, netmask, IP_ADDRESS_LENGTH);
+		_Network_interfaces[itf].ip_netmask[IP_ADDRESS_LENGTH - 1] = '\0';
 
 		const char *gateway = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "gateway");
 		if (gateway == NULL)
 	        return send_rest_error(connection, "Missing 'gateway' parameter.", 400);
-		strncpy(network_interfaces[itf].ip_gateway, gateway, IP_ADDRESS_LENGTH);
-		network_interfaces[itf].ip_gateway[IP_ADDRESS_LENGTH - 1] = '\0';
+		strncpy(_Network_interfaces[itf].ip_gateway, gateway, IP_ADDRESS_LENGTH);
+		_Network_interfaces[itf].ip_gateway[IP_ADDRESS_LENGTH - 1] = '\0';
 
 	} else {
-		network_interfaces[itf].ipv6 = 0;
-		network_interfaces[itf].ip_address[0] = '\0';
-		network_interfaces[itf].ip_netmask[0] = '\0';
-		network_interfaces[itf].ip_gateway[0] = '\0';
+		_Network_interfaces[itf].ipv6 = 0;
+		_Network_interfaces[itf].ip_address[0] = '\0';
+		_Network_interfaces[itf].ip_netmask[0] = '\0';
+		_Network_interfaces[itf].ip_gateway[0] = '\0';
 	}
 	save_eris_network_configuration();
 	write_system_network_configuration();
@@ -890,7 +900,7 @@ static int get_ip_and_netmask(int itf)
 
 		struct ifaddrs *ifa;
 		for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-			if (strcmp(ifa->ifa_name, network_interfaces[itf].name) != 0)
+			if (strcmp(ifa->ifa_name, _Network_interfaces[itf].name) != 0)
 				continue;
 
 			if (ifa == NULL)
@@ -907,13 +917,13 @@ static int get_ip_and_netmask(int itf)
 			in_addr = (family == AF_INET) ?
 					(void*)&((struct sockaddr_in*)ifa->ifa_addr)->sin_addr :
 					(void*)&((struct sockaddr_in6*)ifa->ifa_addr)->sin6_addr;
-			inet_ntop(family, in_addr, network_interfaces[itf].ip_address, IP_ADDRESS_LENGTH);
+			inet_ntop(family, in_addr, _Network_interfaces[itf].ip_address, IP_ADDRESS_LENGTH);
 
 			if (ifa->ifa_netmask != NULL) {
 				in_addr = (family == AF_INET) ?
 					(void*)&((struct sockaddr_in*)ifa->ifa_netmask)->sin_addr :
 					(void*)&((struct sockaddr_in6*)ifa->ifa_netmask)->sin6_addr;
-				inet_ntop(family, in_addr, network_interfaces[itf].ip_netmask, IP_ADDRESS_LENGTH);
+				inet_ntop(family, in_addr, _Network_interfaces[itf].ip_netmask, IP_ADDRESS_LENGTH);
 			}
 
 			ret = 0;
@@ -976,10 +986,10 @@ static int get_default_route(int itf)
 				switch (rta->rta_type) {
 					case RTA_GATEWAY:
 						if (rtm->rtm_family == AF_INET) {
-							if (! network_interfaces[itf].ipv6)
+							if (! _Network_interfaces[itf].ipv6)
 								inet_ntop(AF_INET, RTA_DATA(rta), gw, sizeof(gw));
 						} else if (rtm->rtm_family == AF_INET6) {
-							if (network_interfaces[itf].ipv6)
+							if (_Network_interfaces[itf].ipv6)
 								inet_ntop(AF_INET6, RTA_DATA(rta), gw, sizeof(gw));
 						}
 						break;
@@ -989,11 +999,11 @@ static int get_default_route(int itf)
 				}
 			}
 
-			if (strcmp(ifname, network_interfaces[itf].name) != 0)
+			if (strcmp(ifname, _Network_interfaces[itf].name) != 0)
 				continue;
 			if (strlen(gw) != 0) {
-				strncpy(network_interfaces[itf].ip_gateway, gw, IP_ADDRESS_LENGTH);
-				network_interfaces[itf].ip_gateway[IP_ADDRESS_LENGTH - 1] = '\0';
+				strncpy(_Network_interfaces[itf].ip_gateway, gw, IP_ADDRESS_LENGTH);
+				_Network_interfaces[itf].ip_gateway[IP_ADDRESS_LENGTH - 1] = '\0';
 			}
 		}
 	}
