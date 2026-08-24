@@ -54,8 +54,8 @@ static void set_rtc_time(struct tm *tm);
 
 // ---------------------- Private variables.
 
-static char **tz_names = NULL;
-static int nb_tz_names = 0;
+static char **_Tz_names = NULL;
+static int _Nb_tz_names = 0;
 
 
 // ---------------------- Public methods
@@ -129,6 +129,7 @@ enum MHD_Result time_rest_api(struct MHD_Connection *connection, const char *url
 static enum MHD_Result read_and_send_value(struct MHD_Connection *connection, const char *parameter)
 {
 	char *reply = NULL;
+
 	if (read_parameter_value(parameter, &reply) != 0)
 		return send_rest_error(connection, "Unable to read internal parameter.", 500);
 
@@ -167,7 +168,6 @@ static enum MHD_Result put_time_ntp_server(struct MHD_Connection *connection)
 		return send_rest_error(connection, "Missing server name.", 400);
 
 	for (int i = 0; name[i] != '\0'; i++) {
-
 		if (i > 253)
 			return send_rest_error(connection, "Invalid NTP server name.", 400);
 
@@ -215,28 +215,29 @@ static enum MHD_Result put_time_ntp(struct MHD_Connection *connection)
 static void add_time_zone(const char *group, const char *zone)
 {
 	char **new_tz_names;
-	new_tz_names = realloc(tz_names, (nb_tz_names + 1) * sizeof(char *));
+	new_tz_names = realloc(_Tz_names, (_Nb_tz_names + 1) * sizeof(char *));
 	if (new_tz_names == NULL)
 		return;
-	tz_names = new_tz_names;
+	_Tz_names = new_tz_names;
 
 	if (group != NULL) {
-		tz_names[nb_tz_names] = malloc(strlen(group) + 1 + strlen(zone) + 1);
-		if (tz_names[nb_tz_names] != NULL)
-			sprintf(tz_names[nb_tz_names ++], "%s/%s", group, zone);
+		_Tz_names[_Nb_tz_names] = malloc(strlen(group) + 1 + strlen(zone) + 1);
+		if (_Tz_names[_Nb_tz_names] != NULL)
+			sprintf(_Tz_names[_Nb_tz_names], "%s/%s", group, zone);
 	} else {
-		tz_names[nb_tz_names] = malloc(strlen(zone) + 1);
-		if (tz_names[nb_tz_names] != NULL)
-			sprintf(tz_names[nb_tz_names ++], "%s", zone);
+		_Tz_names[_Nb_tz_names] = malloc(strlen(zone) + 1);
+		if (_Tz_names[_Nb_tz_names] != NULL)
+			sprintf(_Tz_names[_Nb_tz_names], "%s", zone);
 	}
+	_Nb_tz_names ++;
 }
 
 
 
 static int compare_tz(const void *tz1, const void *tz2)
 {
-	const char *a = (const char *) tz1;
-	const char *b = (const char *) tz2;
+	const char *a = *(const char **) tz1;
+	const char *b = *(const char **) tz2;
 
 	if ((a == NULL) && (b == NULL))
 		return 0;
@@ -260,7 +261,7 @@ static void read_time_zone_list(void)
 	struct dirent *entry;
 	struct dirent *subentry;
 
-	if (tz_names != NULL)
+	if (_Tz_names != NULL)
 		return;
 
 	dir = opendir(TIME_ZONE_PATH);
@@ -279,8 +280,8 @@ static void read_time_zone_list(void)
 		}
 
 		if (entry->d_type == DT_DIR) {
-			snprintf(dirname, 1023, "%s/%s", TIME_ZONE_PATH, entry->d_name);
-			dirname[1023] = '\0';
+			snprintf(dirname, sizeof(dirname), "%s/%s", TIME_ZONE_PATH, entry->d_name);
+			dirname[sizeof(dirname) - 1] = '\0';
 			subdir = opendir(dirname);
 			if (subdir == NULL)
 				continue;
@@ -297,7 +298,7 @@ static void read_time_zone_list(void)
 	}
 	closedir(dir);
 
-	qsort(tz_names, nb_tz_names, sizeof(char *),  compare_tz);
+	qsort(_Tz_names, _Nb_tz_names, sizeof(char *),  compare_tz);
 }
 
 
@@ -308,11 +309,11 @@ static enum MHD_Result get_time_zone_list(struct MHD_Connection *connection)
 	size_t size = 0;
 	size_t pos  = 0;
 
-	for (int i = 0; i < nb_tz_names; i++) {
-		if (tz_names[i] != NULL) {
+	for (int i = 0; i < _Nb_tz_names; i++) {
+		if (_Tz_names[i] != NULL) {
 			if (pos > 0)
 				addsnprintf(&reply, &size, &pos, " ");
-			addsnprintf(&reply, &size, &pos, "%s", tz_names[i]);
+			addsnprintf(&reply, &size, &pos, "%s", _Tz_names[i]);
 		}
 	}
 	if (reply == NULL) {
@@ -339,11 +340,11 @@ static enum MHD_Result put_time_zone(struct MHD_Connection *connection)
 	if (name == NULL)
 	        return send_rest_error(connection, "Missing time zone name.", 400);
 
-	for (int i = 0; i < nb_tz_names; i++) {
-		if (tz_names[i] != NULL) {
-			if (strcmp(tz_names[i], name) == 0) {
-				setenv("TZ", tz_names[i], 1);
-				return store_received_value(connection, TIME_ZONE_PREFIX, tz_names[i]);
+	for (int i = 0; i < _Nb_tz_names; i++) {
+		if (_Tz_names[i] != NULL) {
+			if (strcmp(_Tz_names[i], name) == 0) {
+				setenv("TZ", _Tz_names[i], 1);
+				return store_received_value(connection, TIME_ZONE_PREFIX, _Tz_names[i]);
 			}
 		}
 	}
