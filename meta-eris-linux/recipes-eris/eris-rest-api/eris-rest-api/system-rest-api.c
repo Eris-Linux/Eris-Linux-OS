@@ -137,7 +137,16 @@ static enum MHD_Result get_system_type(struct MHD_Connection *connection)
 
 static enum MHD_Result get_system_uuid(struct MHD_Connection *connection)
 {
-	return read_file_first_line_and_send(connection, SYSTEM_UUID_PREFIX, "System UUID not found.");
+	char *uuid;
+
+	if (read_parameter_value(SYSTEM_UUID_PREFIX, &uuid) == 0) {
+		if (uuid != NULL) {
+			int ret = send_rest_response(connection, uuid);
+			free(uuid);
+			return ret;
+		}
+	}
+	return send_rest_error(connection, "System UUID not found.", 500);
 }
 
 
