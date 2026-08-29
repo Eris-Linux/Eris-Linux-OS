@@ -1,0 +1,391 @@
+#!/bin/sh
+#
+# Script to start/stop/restart containers on Eris Linux system.
+#
+# Christophe BLAESS 2024.
+# (c) 2024-2026 Logilin.
+
+
+CONTAINERS_FILE="/etc/eris-linux/containers"
+PARAMETERS_FILE="/etc/eris-linux/parameters"
+SLOTS_DIR="/data/containers"
+CONTAINERS_STORAGE="/data/container-storage"
+
+MIN_SLOT_NUMBER=1
+MAX_SLOT_NUMBER=4
+
+X11_OPT="-e DISPLAY=:0 -v /tmp/.X11-unix:/tmp/.X11-unix"
+
+# The following lines produces a light container with ABI-dependency on Yocto-produced Qt libraries.
+#GCC_OPT="-v /lib:/gcclib:ro"
+#LIB_OPT="-e LD_LIBRARY_PATH=/qt-usr-lib:/gcclib"
+#QT6_OPT="-v /usr/lib/:/qt-usr-lib:ro -e QT_QPA_PLATFORM_PLUGIN_PATH=/qt-usr-lib/plugins/platforms"
+#FONT_OPT="-v /etc/fonts:/etc/fonts:ro -v /usr/share/fonts:/usr/share/fonts:ro"
+
+Container_mode="all"
+
+read_parameter()
+{
+	local name="${1}"
+	local value=""
+	local line=""
+
+	while IFS= read -r line
+	do
+		value="${line#${name}=}"
+		if [ "${value}" != "${line}" ]
+		then
+			echo "${value}"
+			return 0
+		fi
+	done < "${PARAMETERS_FILE}"
+	return 1
+}
+
+
+
+wait_for_address_reachable()
+{
+	local addr="${1}"
+	local count=0
+
+	while [ $count -lt 30 ]
+	do
+		if ip route get "${addr}" >/dev/null 2>&1
+		then
+			if ping -c1 -w1 ${addr} >/dev/null 2>&1
+			then
+				return 0
+			fi
+		fi
+		sleep 1
+		count=$((count + 1))
+	done
+
+	ip addr > /tmp/afac
+	ip route >> /tmp/afac
+
+	return 1
+}
+
+
+
+start_container()
+{
+	local slot="${1}"
+	local slot_name="slot-${slot}"
+	local container_name="cnt-${slot}"
+	local slot_dir="${SLOTS_DIR}/${slot_name}"
+	local error_file="/run/container-error-${slot}"
+	local tmp_error_file="/run/container-error-${slot}.$$"
+	local id=""
+	local label=""
+	local version=""
+	local filename=""
+	local b64=""
+	local graphical=""
+	local redirections=""
+	local privileged=""
+	local network_needed=""
+	local rest=""
+	local count=${MIN_SLOT_NUMBER}
+	local output=""
+	local run_code=0
+	local syslog_addr=""
+	local syslog_port="10000"
+
+	if [ "${slot}" = "" ] || [ ${slot} -lt ${MIN_SLOT_NUMBER} ] || [ ${slot} -gt ${MAX_SLOT_NUMBER} ]; then return; fi
+
+	# Read the slot parameters.
+	#
+	while IFS=! read id label version filename b64 graphical redirections privileged network_needed
+	do
+		if [ "${count}" = "${slot}" ]; then break; fi
+		count=$((count + 1))
+	done < "${CONTAINERS_FILE}"
+
+	# Ignore empty slot.
+	#
+	if [ "${id}" = "" ] || [ "${id}" = "-1" ]; then
+		rm -f "${error_file}"
+		return 0
+	fi
+
+	# Check if the slot is in  debug mode.
+	#
+	syslog_addr=$(read_parameter "syslog_addr_${slot}")
+	if [ $?  -eq 0 ]
+	then
+		syslog_port=$(read_parameter "syslog_port_${slot}")
+		if [ $? -ne 0 ]; then syslog_port=10000; fi
+	else
+		syslog_addr=""
+	fi
+
+	# Ignore network oriented containers when in early phase.
+	#
+	if [ "${network_needed}" = "Y" ] || [ "${network_needed}" = "y" ] || [ "${syslog_addr}" != "" ]
+	then
+		if [ "${Container_mode}" = "early" ]
+		then
+			rm -f "${error_file}"
+			return
+		fi
+	# Ignore early containers during network ready phase.
+	#
+	else
+		if [ "${Container_mode}" = "network" ]
+		then
+			rm -f "${error_file}"
+			return
+		fi
+	fi
+
+	# Ignore absent container image.
+	#
+	if [ ! -f "${slot_dir}/slot.tar" ]
+	then
+		printf "%d\n" 5 > "${tmp_error_file}"
+		printf "Unable to find container image '%s'.\n" "${slot_dir}/slot.tar" >> "${tmp_error_file}"
+		mv  "${tmp_error_file}"  "${error_file}"
+		return
+	fi
+
+	# Import the container image.
+	#
+	docker image rm "${slot_name}" >/dev/null 2>&1
+	output=$(docker import - ${slot_name} < "${slot_dir}/slot.tar" 2>&1)
+	run_code=$?
+	if [ "${run_code}" -ne 0 ]
+	then
+		printf "%d\n" 5 > "${tmp_error_file}"
+		printf "%s" "${output}" >> "${tmp_error_file}"
+		mv  "${tmp_error_file}"  "${error_file}"
+		return
+	fi
+
+	# Read the command to run.
+	#
+	local cmd=""
+	if [ -f "${slot_dir}/slot.cmd" ]
+	then
+		cmd=$(cat "${slot_dir}/slot.cmd")
+	fi
+
+	# Base options.
+	#
+	local docker_opts="--add-host=host.docker.internal:host-gateway"
+	docker_opts="${docker_opts} --mount type=bind,source=${CONTAINERS_STORAGE},target=/data"
+
+	# Graphical options.
+	#
+	if [ "${graphical:0:1}" = "Y" ] || [ "${graphical:0:1}" = "y" ]
+	then
+		docker_opts="${docker_opts} ${X11_OPT} ${QT6_OPT} ${GCC_OPT} ${LIB_OPT} ${FONT_OPT}"
+	fi
+
+	# Port redirections.
+	#
+	for redirection in ${redirections}
+	do
+		local ext_port=""
+		local int_port=""
+		local option=""
+		local protocol=""
+		option="${redirection}"
+		# Expected: <external port>:<internal port>/<protocol>
+		ext_port="${option%%:*}"
+		option="${option#*:}"
+		if [ "${ext_port}" = "${option}" ] || [ "${option}" = "" ]
+		then
+			int_port="${ext_port}"
+			protocol="tcp"
+		else
+			int_port="${option%/*}"
+			protocol="${option#*/}"
+			if [ "${int_port}" = "${protocol}" ] || [ "${protocol}" = "" ]
+			then
+				protocol="tcp"
+			fi
+		fi
+		docker_opts="${docker_opts} -p ${ext_port}:${int_port}/${protocol}"
+	done
+
+	# Privileged container option.
+	#
+	if [ "${privileged:0:1}" = "Y" ] || [ "${privileged:0:1}" = "y" ]
+	then
+		docker_opts="${docker_opts} --privileged"
+	fi
+
+	# Syslog debug options.
+	#
+	if [ "${syslog_addr}" != "" ]
+	then
+		docker_opts="${docker_opts} --log-driver syslog --log-opt syslog-address=udp://${syslog_addr}:${syslog_port} --log-opt tag=eris-${slot} --log-opt cache-disabled=true --log-opt mode=non-blocking"
+
+		if ! wait_for_address_reachable "${syslog_addr}"
+		then
+			printf "%d\n" 11 > "${tmp_error_file}"
+			printf "Unable to reach ${syslog_addr} to send debug traces.\n" >> "${tmp_error_file}"
+			mv  "${tmp_error_file}"  "${error_file}"
+			return
+		fi
+	fi
+
+	# Start the container.
+	#
+	docker rm -f "${container_name}" >/dev/null 2>&1
+	output=$(docker run -d --init ${docker_opts} --name "${container_name}" "${slot_name}" ${cmd} 2>&1)
+	run_code=$?
+	if [ ${run_code} -eq 0 ]; then
+		rm -f "${error_file}"
+	else
+		if   [ ${run_code} -eq 126 ]; then
+			# Invalid command.
+			printf "%d\n" 7 > "${tmp_error_file}"
+		elif [ ${run_code} -eq 127 ]; then
+			# Missing app.
+			printf "%d\n" 8 > "${tmp_error_file}"
+		else
+			# Running error.
+			printf "%d\n" 6 > "${tmp_error_file}"
+		fi
+		printf "%s \n" "${output}" >> "${tmp_error_file}"
+		mv  "${tmp_error_file}"  "${error_file}"
+	fi
+}
+
+
+
+start_all_containers()
+{
+	local slot=${MIN_SLOT_NUMBER}
+
+	while IFS=! read id rest
+	do
+		if [ ${id} -ge 0 ]
+		then
+			start_container "${slot}"
+		fi
+
+		slot=$(( ${slot} + 1 ))
+
+	done < "${CONTAINERS_FILE}"
+}
+
+
+
+stop_container()
+{
+	local name="cnt-${1}"
+
+	docker rm -f "${name}" >/dev/null 2>&1
+}
+
+
+
+stop_all_containers()
+{
+	local i
+
+	for i in $(seq ${MIN_SLOT_NUMBER} ${MAX_SLOT_NUMBER})
+	do
+		stop_container "$i"
+	done
+}
+
+
+
+display_help()
+{
+		echo "Usage: $0 {start|stop|restart|start-slot <n>|stop-slot <n>|restart-slot <n>}"
+}
+
+
+touch "${CONTAINERS_FILE}"
+for s in $(seq ${MIN_SLOT_NUMBER} ${MAX_SLOT_NUMBER})
+do
+	mkdir -p "${SLOTS_DIR}/slot-${s}"
+done
+mkdir -p "${CONTAINERS_STORAGE}"
+
+
+case "$1" in
+	early)
+		Container_mode="early"
+		shift
+		;;
+	network)
+		Container_mode="network"
+		shift
+		;;
+	*)
+		Container_mode="all"
+esac
+
+
+case "$1" in
+	start)
+		echo -n "Starting Eris containers... "
+		start_all_containers
+		echo "done."
+		;;
+
+	start-slot)
+		if [ $# -ge 2 ] && [ $2 -ge ${MIN_SLOT_NUMBER} ] && [ $2 -le ${MAX_SLOT_NUMBER} ]
+		then
+			echo -n "Starting Eris container $2... "
+        	        start_container $2
+	                echo "done."
+		else
+			display_help
+			exit 1
+		fi
+                ;;
+
+	stop)
+		echo -n "Stopping Eris containers... "
+		stop_all_containers
+		echo "done."
+		;;
+
+	stop-slot)
+		if [ $# -ge 2 ] && [ $2 -ge ${MIN_SLOT_NUMBER} ] && [ $2 -le ${MAX_SLOT_NUMBER} ]
+		then
+			echo -n "Stopping Eris container $2... "
+	                stop_container $2
+        	        echo "done."
+		else
+			display_help
+			exit 1
+		fi
+                ;;
+
+	force-reload|restart)
+		echo -n "Stopping and restarting Eris containers..."
+		stop_all_containers
+		start_all_containers
+		echo "done."
+		;;
+
+	restart-slot)
+		if [ $# -ge 2 ] && [ $2 -ge ${MIN_SLOT_NUMBER} ] && [ $2 -le ${MAX_SLOT_NUMBER} ]
+		then
+			echo "Restarting Eris container $2... "
+	                stop_container $2
+        	        start_container $2
+			echo "Done."
+		else
+			display_help
+			exit 1
+		fi
+                ;;
+
+	*)
+		display_help
+		exit 1
+		;;
+esac
+
+exit 0
