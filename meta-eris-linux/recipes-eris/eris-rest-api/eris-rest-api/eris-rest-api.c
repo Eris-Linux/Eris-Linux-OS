@@ -9,10 +9,13 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <microhttpd.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
 #include "addsnprintf.h"
 #include "contact-rest-api.h"
@@ -54,6 +57,12 @@ int main(int argc, char *argv[])
 	if (eris_rest_api_init(argc, argv) != 0)
 		exit(EXIT_FAILURE);
 
+	struct sockaddr_in loopback_addr;
+	memset(&loopback_addr, 0, sizeof(loopback_addr));
+	loopback_addr.sin_family = AF_INET;
+	loopback_addr.sin_port = htons(8080);
+	loopback_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
 	daemon = MHD_start_daemon(
 		MHD_USE_SELECT_INTERNALLY,  // flags.
 		8080,                       // port.
@@ -61,6 +70,8 @@ int main(int argc, char *argv[])
 		NULL,                       // apc_cls: extra argument to apc.
 		&eris_rest_api_handler,     // dh: default handler for all URI.
 		NULL,                       // dh_cls: extra argument to dh.
+		MHD_OPTION_SOCK_ADDR,       // export server only on loopback.
+		(struct sockaddr *)&loopback_addr,
 		MHD_OPTION_END              // End of arguments.
 	);
 
