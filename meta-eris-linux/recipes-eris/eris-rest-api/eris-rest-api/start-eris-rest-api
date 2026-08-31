@@ -2,7 +2,16 @@
 
 case "$1" in
 	start)
+		# Accept established connection.
+		iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+		# Accept localhost traffic on port 8080.
+		iptables -A INPUT -i lo -p tcp --dport 8080 -j ACCEPT
+		# Accept docker traffic on port 8080.
+		iptables -A INPUT -i docker0 -p tcp --dport 8080 -j ACCEPT
+		# Refuse external traffic on port 8080
+		iptables -A INPUT -p tcp --dport 8080 -j DROP
 		/usr/sbin/eris-rest-api & ;;
+
 	stop)   killall eris-rest-api ;;
 	restart) killall eris-rest-api ; /usr/sbin/eris-rest-api & ;;
 	*) echo "usage: $0 {start | stop | restart}" >&2; exit 1 ;;
