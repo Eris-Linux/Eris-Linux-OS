@@ -20,8 +20,9 @@
 
 // ---------------------- Private macros declarations.
 
-#define CONTACT_PERIOD_PREFIX     "status_upload_period_seconds="
-#define SERVER_CONTACT_FIFO       "/var/run/contact-eris-server"
+#define GROUP_CONTACT_PERIOD_PREFIX     "status_upload_period_seconds="
+#define DEVICE_CONTACT_PERIOD_PREFIX    "device_status_upload_period_seconds="
+#define SERVER_CONTACT_FIFO             "/var/run/contact-eris-server"
 
 
 // ---------------------- Private method declarations.
@@ -65,7 +66,14 @@ static enum MHD_Result get_contact_period(struct MHD_Connection *connection)
 	char *reply = NULL;
 
 	if (connection != NULL) {
-		if (read_parameter_value(CONTACT_PERIOD_PREFIX, &reply) == 0) {
+		if (read_parameter_value(DEVICE_CONTACT_PERIOD_PREFIX, &reply) == 0) {
+			if ((reply != NULL) && (strcmp(reply, "-1") != 0)) {
+				enum MHD_Result ret = send_rest_response(connection, reply);
+				free(reply);
+				return ret;
+			}
+		}
+		if (read_parameter_value(GROUP_CONTACT_PERIOD_PREFIX, &reply) == 0) {
 			if (reply != NULL) {
 				enum MHD_Result ret = send_rest_response(connection, reply);
 				free(reply);
@@ -92,10 +100,10 @@ static enum MHD_Result put_contact_period(struct MHD_Connection *connection)
 	char *end;
 	errno = 0;
 	value = strtol(period_str, &end, 10);
-	if ((errno != 0) || (*end != '\0') || (value < 0) || (value > 86400))
-		return send_rest_error(connection, "Server contact period must be in [0-86400] seconds.", 400);
+	if ((errno != 0) || (*end != '\0') || ((value != -1) && ((value < 60) || (value > 86400))))
+		return send_rest_error(connection, "Server contact period must be -1 or in [60-86400] seconds.", 400);
 
-	if (write_parameter_value(CONTACT_PERIOD_PREFIX, period_str) != 0)
+	if (write_parameter_value(DEVICE_CONTACT_PERIOD_PREFIX, period_str) != 0)
 		return send_rest_error(connection, "Unable to save server contact period.", 500);
 
 	return send_rest_response(connection, "Ok");
