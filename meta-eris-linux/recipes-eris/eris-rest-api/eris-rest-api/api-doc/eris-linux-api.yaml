@@ -12,7 +12,7 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
 servers:
-  - url: http://localhost:8080/api
+  - url: http:///host.docker.internal:8080/api
     description: API is reachable by custom code running in containers embedded in Eris Linux system.
     variables:
       host:
@@ -25,7 +25,7 @@ externalDocs:
 tags:
   - name: Contact
     description: Periodic contact between the embedded system and the device manager.
-  - name: Containers
+  - name: Container
     description: Docker container related operations.
   - name: GPIO
     description: General Purpose Input Output related requests.
