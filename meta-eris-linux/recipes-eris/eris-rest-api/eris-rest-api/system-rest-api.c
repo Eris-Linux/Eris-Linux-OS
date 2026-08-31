@@ -27,11 +27,12 @@
 
 static int init_system_uuid(const char *app);
 
+static enum MHD_Result get_system_kernel   (struct MHD_Connection *connection);
 static enum MHD_Result get_system_model    (struct MHD_Connection *connection);
+static enum MHD_Result get_system_status   (struct MHD_Connection *connection);
 static enum MHD_Result get_system_type     (struct MHD_Connection *connection);
 static enum MHD_Result get_system_uuid     (struct MHD_Connection *connection);
 static enum MHD_Result get_system_version  (struct MHD_Connection *connection);
-static enum MHD_Result get_system_status   (struct MHD_Connection *connection);
 
 static enum MHD_Result read_file_first_line_and_send(struct MHD_Connection *connection, const char *filename, const char *error_message);
 
@@ -55,8 +56,14 @@ int init_system_rest_api(const char *app)
 
 enum MHD_Result system_rest_api(struct MHD_Connection *connection, const char *url, const char *method)
 {
+	if ((strcmp(url, "/api/system/kernel") == 0) && (strcmp(method, "GET") == 0))
+		return get_system_kernel(connection);
+
 	if ((strcmp(url, "/api/system/model") == 0) && (strcmp(method, "GET") == 0))
 		return get_system_model(connection);
+
+	if ((strcmp(url, "/api/system/status") == 0) && (strcmp(method, "GET") == 0))
+		return get_system_status(connection);
 
 	if ((strcmp(url, "/api/system/type") == 0) && (strcmp(method, "GET") == 0))
 		return get_system_type(connection);
@@ -66,9 +73,6 @@ enum MHD_Result system_rest_api(struct MHD_Connection *connection, const char *u
 
 	if ((strcmp(url, "/api/system/version") == 0) && (strcmp(method, "GET") == 0))
 		return get_system_version(connection);
-
-	if ((strcmp(url, "/api/system/status") == 0) && (strcmp(method, "GET") == 0))
-		return get_system_status(connection);
 
 	return MHD_NO;
 }
@@ -102,6 +106,32 @@ static int init_system_uuid(const char *app)
 
 
 
+static enum MHD_Result get_system_kernel(struct MHD_Connection *connection)
+{
+	if (connection == NULL)
+		return MHD_NO;
+
+	FILE *pp = popen("/bin/uname -r", "r");
+	if (pp == NULL)
+		return send_rest_error(connection, "Unable to get kernel version.", 500);
+
+	char line[ERIS_LINE_SIZE];
+	if (fgets(line, sizeof(line) - 1, pp) == NULL) {
+		pclose(pp);
+		return send_rest_error(connection, "Kernel version not found.", 500);
+	}
+	pclose(pp);
+
+	line[sizeof(line) - 1] = '\0';
+	if (line[0] != '\0')
+		if (line[strlen(line) - 1] == '\n')
+			line[strlen(line) - 1] = '\0';
+
+	return send_rest_response(connection, line);
+}
+
+
+
 static enum MHD_Result get_system_model(struct MHD_Connection *connection)
 {
 	if (connection == NULL)
@@ -124,37 +154,6 @@ static enum MHD_Result get_system_model(struct MHD_Connection *connection)
 			line[strlen(line) - 1] = '\0';
 
 	return send_rest_response(connection, line);
-}
-
-
-
-static enum MHD_Result get_system_type(struct MHD_Connection *connection)
-{
-	return read_file_first_line_and_send(connection, SYSTEM_MODEL_TYPE, "System type file not found.");
-}
-
-
-
-static enum MHD_Result get_system_uuid(struct MHD_Connection *connection)
-{
-	char *uuid;
-
-	if (read_parameter_value(SYSTEM_UUID_PREFIX, &uuid) == 0) {
-		if (uuid != NULL) {
-			int ret = send_rest_response(connection, uuid);
-			free(uuid);
-			return ret;
-		}
-	}
-	return send_rest_error(connection, "System UUID not found.", 500);
-}
-
-
-
-static enum MHD_Result get_system_version(struct MHD_Connection *connection)
-{
-	return read_file_first_line_and_send(connection, SYSTEM_VERSION_FILE, "System version file not found.");
-
 }
 
 
@@ -206,6 +205,37 @@ static enum MHD_Result get_system_status(struct MHD_Connection *connection)
 	}
 
 	return ret;
+}
+
+
+
+static enum MHD_Result get_system_type(struct MHD_Connection *connection)
+{
+	return read_file_first_line_and_send(connection, SYSTEM_MODEL_TYPE, "System type file not found.");
+}
+
+
+
+static enum MHD_Result get_system_uuid(struct MHD_Connection *connection)
+{
+	char *uuid;
+
+	if (read_parameter_value(SYSTEM_UUID_PREFIX, &uuid) == 0) {
+		if (uuid != NULL) {
+			int ret = send_rest_response(connection, uuid);
+			free(uuid);
+			return ret;
+		}
+	}
+	return send_rest_error(connection, "System UUID not found.", 500);
+}
+
+
+
+static enum MHD_Result get_system_version(struct MHD_Connection *connection)
+{
+	return read_file_first_line_and_send(connection, SYSTEM_VERSION_FILE, "System version file not found.");
+
 }
 
 

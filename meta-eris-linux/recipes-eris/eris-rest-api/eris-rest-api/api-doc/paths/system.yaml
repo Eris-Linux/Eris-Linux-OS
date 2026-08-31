@@ -1,3 +1,21 @@
+kernel:
+  get:
+    summary: Get the kernel version number.
+    tags: [ System ]
+    responses:
+      '200':
+        description: Kernel version of the board (for example `6.6.63-v8-16k`)
+        content:
+          text/plain:
+            schema:
+              type: string
+      '500':
+        description: Internal error looking for kernel version.
+        content:
+          text/plain:
+            schema:
+              type: string
+
 model:
   get:
     summary: Get the model of the board.
