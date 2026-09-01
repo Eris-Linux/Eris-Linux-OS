@@ -95,7 +95,7 @@ static int init_system_uuid(const char *app)
 		}
 	}
 	char new_uuid[UUID_LENGTH];
-	uuid_generate((unsigned char *)new_uuid);
+	uuid_generate_random(uuid);
 	uuid_unparse(uuid, new_uuid);
 	if (write_parameter_value(SYSTEM_UUID_PREFIX, new_uuid) != 0) {
 		fprintf(stderr, "%s: unable to save system UUID parameter.\n", app);
