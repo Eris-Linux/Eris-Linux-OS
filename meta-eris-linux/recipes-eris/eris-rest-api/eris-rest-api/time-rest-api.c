@@ -328,7 +328,15 @@ static enum MHD_Result get_time_zone_list(struct MHD_Connection *connection)
 
 static enum MHD_Result get_time_zone(struct MHD_Connection *connection)
 {
-	return read_and_send_value(connection, TIME_ZONE_PREFIX);
+
+	char *reply = NULL;
+
+	if ((read_parameter_value(TIME_ZONE_PREFIX, &reply) != 0) || (reply == NULL))
+		return send_rest_response(connection, "UTC");
+
+	int ret = send_rest_response(connection, reply);
+	free(reply);
+	return ret;
 }
 
 
@@ -406,6 +414,7 @@ static enum MHD_Result put_time_system(struct MHD_Connection *connection)
 	        return send_rest_error(connection, "Missing system time.", 400);
 
 	if ((sscanf(timestr, "%d-%d-%dT%d:%d:%d", &(tm.tm_year), &(tm.tm_mon), &(tm.tm_mday), &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 6)
+	 && (sscanf(timestr, "%d/%d/%dT%d:%d:%d", &(tm.tm_year), &(tm.tm_mon), &(tm.tm_mday), &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 6)
 	 && (sscanf(timestr, "%d-%d-%d %d:%d:%d", &(tm.tm_year), &(tm.tm_mon), &(tm.tm_mday), &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 6)
 	 && (sscanf(timestr, "%d/%d/%d %d:%d:%d", &(tm.tm_year), &(tm.tm_mon), &(tm.tm_mday), &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 6)
 	 && (sscanf(timestr, "%d:%d:%d:%d:%d:%d", &(tm.tm_year), &(tm.tm_mon), &(tm.tm_mday), &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 6)) {
