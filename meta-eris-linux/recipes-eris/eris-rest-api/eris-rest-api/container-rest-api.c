@@ -19,11 +19,30 @@
 
 #define UUID_LENGTH 40
 
-#define SYSTEM_CONTAINERS_FILE    "/etc/eris-linux/containers"
-#define CONTAINER_UPDATE_POLICY   "container_update_policy="
+#define SYSTEM_CONTAINERS_FILE         "/etc/eris-linux/containers"
+#define CONTAINER_UPDATE_POLICY        "container_update_policy="
+#define CONTAINER_ERROR_FILE_PREFIX    "/run/container-error-"
 
 #define MAX_CONTAINERS  4
 #define CONTAINER_LINE  1024
+
+#define CONTAINER_STATUS_EMPTY          -1
+#define CONTAINER_STATUS_OK              0
+#define CONTAINER_STATUS_DOWNLOAD_ERR    1
+#define CONTAINER_STATUS_DECRYPT_ERR     2
+#define CONTAINER_STATUS_EXTRACT_ERR     3
+#define CONTAINER_STATUS_CHECKSUM_ERR    4
+#define CONTAINER_STATUS_IMPORT_ERR      5
+#define CONTAINER_STATUS_RUNNING_ERR     6
+#define CONTAINER_STATUS_INVALID_APP     7
+#define CONTAINER_STATUS_MISSING_APP     8
+#define CONTAINER_STATUS_RUNTIME_ERR     9
+#define CONTAINER_STATUS_TERMINATED_APP 10
+#define CONTAINER_STATUS_DEBUG_UNREACH  11
+#define CONTAINER_STATUS_INTERNAL_ERR   12
+
+#define CONTAINER_STATUS_MAX     CONTAINER_STATUS_INTERNAL_ERR
+
 
 // ---------------------- Private method declarations.
 
@@ -205,34 +224,99 @@ static enum MHD_Result get_container_status(struct MHD_Connection *connection)
 
 	errno = 0;
 	char *ptr;
-	long int cnt = strtol(container_num, &ptr, 10);
+	long int slot_number = strtol(container_num, &ptr, 10);
 	if ((ptr == container_num) || (errno != 0))
 		return send_rest_error(connection, "Invalid slot index.", 400);
 
 	char line[CONTAINER_LINE];
-	if ((cnt < 0) || (cnt >= MAX_CONTAINERS)) {
+	if ((slot_number < 0) || (slot_number >= MAX_CONTAINERS)) {
 		snprintf(line, sizeof(line) - 1, "Slot index must be between 0 and %d.", MAX_CONTAINERS - 1);
 		line[sizeof(line) - 1] = '\0';
 		return send_rest_error(connection, line, 400);
 	}
 
-	char slotname[16];
-	snprintf(slotname, sizeof(slotname) - 1, "slot-%ld", cnt + 1);
+	char error_file_name[32];
+	if (snprintf(error_file_name, sizeof(error_file_name), "%s%ld", CONTAINER_ERROR_FILE_PREFIX, slot_number) >= sizeof(error_file_name))
+		return send_rest_error(connection, "Error in container error file name.", 500);
 
-	FILE *fp = popen("docker ps", "r");
-	if (fp == NULL)
-		return send_rest_error(connection, "Unable to communicate with docker.", 500);
+	int code = CONTAINER_STATUS_INTERNAL_ERR;
 
-	int found = 0;
-	while (fgets(line, sizeof(line) - 1, fp) != NULL) {
-		if (strstr(line, slotname) != NULL) {
-			found = 1;
-			break;
+	FILE *fp = fopen(error_file_name, "r");
+	if (fp == NULL) {
+
+		// The file doesn't exist: there hasn't been any error up to `docker run`.
+		char cnt_name[32];
+		if (snprintf(cnt_name, sizeof(cnt_name), "cnt-%ld", slot_number) >= sizeof(cnt_name))
+			return send_rest_error(connection, "Error in container status file name.", 500);
+
+		char popen_cmd[1024];
+		if (snprintf(popen_cmd, sizeof(popen_cmd), "/usr/bin/docker inspect --format {{.State.Status}} %s", cnt_name) >= sizeof(popen_cmd))
+			return send_rest_error(connection, "Error in docker command line.", 500);
+
+		FILE * pp = popen(popen_cmd, "r");
+		if (pp == NULL)
+			return send_rest_error(connection, "Error in docker inspect execution.", 500);
+
+		char buffer[1024];
+		if (fgets(buffer, sizeof(buffer), pp) == NULL) {
+			pclose(pp);
+			return send_rest_error(connection, "Error in docker inspect result.", 500);
 		}
-	}
-	pclose(fp);
 
-	return send_rest_response(connection, found ? "running" : "stopped");
+		int pcode = pclose(pp);
+		if (WIFEXITED(pcode)) {
+			if (WEXITSTATUS(pcode) != 0) {
+				code = CONTAINER_STATUS_EMPTY;
+			} else {
+				code = CONTAINER_STATUS_TERMINATED_APP;
+				if ((strncmp(buffer, "running", 7) == 0) || (strncmp(buffer, "created", 7) == 0) || (strncmp(buffer, "restarting", 10) == 0))
+					code = CONTAINER_STATUS_OK;
+			}
+		}
+	} else {
+		char line[1024];
+
+		if ((fgets(line, sizeof(line) - 1, fp) == NULL)
+		 || (sscanf(line, "%d", &code) != 1)
+		 || (code < CONTAINER_STATUS_EMPTY)
+		 || (code > CONTAINER_STATUS_MAX)) {
+			fclose(fp);
+			return send_rest_error(connection, "Error in docker run code.", 500);
+		}
+		fclose(fp);
+	}
+
+	switch (code) {
+		case CONTAINER_STATUS_EMPTY:
+			return send_rest_response(connection, "-1 empty");
+		case CONTAINER_STATUS_OK:
+			return send_rest_response(connection, "0 running");
+		case CONTAINER_STATUS_DOWNLOAD_ERR:
+			return send_rest_response(connection, "1 download error");
+		case CONTAINER_STATUS_DECRYPT_ERR:
+			return send_rest_response(connection, "2 decrypt error");
+		case CONTAINER_STATUS_EXTRACT_ERR:
+			return send_rest_response(connection, "3 extract error");
+		case CONTAINER_STATUS_CHECKSUM_ERR:
+			return send_rest_response(connection, "4 checksum error");
+		case CONTAINER_STATUS_IMPORT_ERR:
+			return send_rest_response(connection, "5 import error");
+		case CONTAINER_STATUS_RUNNING_ERR:
+			return send_rest_response(connection, "6 running error");
+		case CONTAINER_STATUS_INVALID_APP:
+			return send_rest_response(connection, "7 invalid application error");
+		case CONTAINER_STATUS_MISSING_APP:
+			return send_rest_response(connection, "8 missing application error");
+		case CONTAINER_STATUS_RUNTIME_ERR:
+			return send_rest_response(connection, "9 runtime error");
+		case CONTAINER_STATUS_TERMINATED_APP:
+			return send_rest_response(connection, "10 application terminated");
+		case CONTAINER_STATUS_DEBUG_UNREACH:
+			return send_rest_response(connection, "11 debug unreachable");
+		case CONTAINER_STATUS_INTERNAL_ERR:
+		default:
+			return send_rest_response(connection, "12 internal error");
+	}
 }
 
 
