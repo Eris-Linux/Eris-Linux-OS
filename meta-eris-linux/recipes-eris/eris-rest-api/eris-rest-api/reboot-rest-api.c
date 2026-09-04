@@ -184,7 +184,9 @@ static enum MHD_Result post_reboot_rollback(struct MHD_Connection *connection)
 	if (connection == NULL)
 		return MHD_NO;
 
-	return send_rest_error(connection, "Feature not implemented yet.", 501);
+	system("/usr/sbin/force-system-rollback");
+
+	return send_rest_response(connection, "Ok");
 }
 
 
