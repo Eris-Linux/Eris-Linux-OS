@@ -1,0 +1,19 @@
+
+
+1.0.1 2026/09/14
+	- Containers: add `network-needed` (internal) field.
+	- Containers: improve status details.
+	- Rest API: listen for requests only from localhost.
+	- Rest API: fix timezone reading and writing
+	- Rest API: fix UUID generation
+	- Rest API: implement `GET /api/system/kernel` API method.
+	- Rest API: change `CLOSED` source to `GPL-2.0-only`.
+	- Rest API: implement `POST /api/reboot/rollback` method.
+	- Liberis: implement `eris_get_system_kernel()` method.
+	- Liberis: rename `eris_reboot()` method to `eris_reboot_now()`.
+	- Liberis: fix NTP status methods.
+	- Device manager communication: fix explicit contact handling.
+
+1.0.0 2026/08/24
+	- First public release
+
