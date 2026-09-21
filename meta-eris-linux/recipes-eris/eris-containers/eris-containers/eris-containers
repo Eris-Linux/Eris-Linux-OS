@@ -24,6 +24,32 @@ X11_OPT="-e DISPLAY=:0 -v /tmp/.X11-unix:/tmp/.X11-unix"
 
 Container_mode="all"
 
+
+ERIS_DEBUG_MODE=0
+DEBUG_MODE_NONE=0
+DEBUG_MODE_LOG=1
+DEBUG_MODE_GDB=2
+ERIS_DEBUG_LOG_ADDRESS=""
+ERIS_DEBUG_LOG_BASE_PORT=10000
+ERIS_DEBUG_GDB_SLOT=0
+ERIS_DEBUG_GDB_PORT=15000
+
+
+read_debug_parameters()
+{
+	if [ -r /run/eris-debug ]
+	then
+		ERIS_DEBUG_MODE=0
+		ERIS_DEBUG_LOG_ADDRESS=""
+		ERIS_DEBUG_LOG_BASE_PORT=10000
+		ERIS_DEBUG_GDB_SLOT=0
+		ERIS_DEBUG_GDB_PORT=15000
+		.  /run/eris-debug
+	fi
+}
+
+
+
 read_parameter()
 {
 	local name="${1}"
@@ -70,6 +96,37 @@ wait_for_address_reachable()
 
 
 
+find_container_application_pid()
+{
+	local slot="$1"
+	local container_pid=""
+	local app_pid=""
+	local count=0
+
+	container_pid=$(docker inspect --format '{{.State.Pid}}' "cnt-${slot}" 2>/dev/null) || return 1
+
+	while [ "${count}" -lt 50 ]
+	do
+		if [ -r "/proc/${container_pid}/task/${container_pid}/children" ]
+		then
+			set -- $(cat "/proc/${container_pid}/task/${container_pid}/children")
+			app_pid="$1"
+
+			if [ -n "${app_pid}" ]
+			then
+				echo "${app_pid}"
+				return 0
+			fi
+		fi
+		sleep 0.1
+		count=$((count + 1))
+	done
+
+	return 1
+}
+
+
+
 start_container()
 {
 	local slot="${1}"
@@ -91,8 +148,6 @@ start_container()
 	local count=${MIN_SLOT_NUMBER}
 	local output=""
 	local run_code=0
-	local syslog_addr=""
-	local syslog_port="10000"
 
 	if [ "${slot}" = "" ] || [ ${slot} -lt ${MIN_SLOT_NUMBER} ] || [ ${slot} -gt ${MAX_SLOT_NUMBER} ]; then return; fi
 
@@ -104,6 +159,10 @@ start_container()
 		count=$((count + 1))
 	done < "${CONTAINERS_FILE}"
 
+	# Read the debug parameters.
+	#
+	read_debug_parameters
+
 	# Ignore empty slot.
 	#
 	if [ "${id}" = "" ] || [ "${id}" = "-1" ]; then
@@ -111,20 +170,23 @@ start_container()
 		return 0
 	fi
 
-	# Check if the slot is in  debug mode.
+	# Check if the slot is in debug mode.
 	#
-	syslog_addr=$(read_parameter "syslog_addr_${slot}")
-	if [ $?  -eq 0 ]
+	local slot_in_debug_mode="n"
+	if [ $((${ERIS_DEBUG_MODE} & ${DEBUG_MODE_LOG})) -ne 0 ]
 	then
-		syslog_port=$(read_parameter "syslog_port_${slot}")
-		if [ $? -ne 0 ]; then syslog_port=10000; fi
-	else
-		syslog_addr=""
+		slot_in_debug_mode="y"
+	elif [ $((${ERIS_DEBUG_MODE} & ${DEBUG_MODE_GDB})) -ne 0 ]
+	then
+		if [ "${ERIS_DEBUG_GDB_SLOT}" = "${slot}" ]
+		then
+			slot_in_debug_mode="y"
+		fi
 	fi
 
 	# Ignore network oriented containers when in early phase.
 	#
-	if [ "${network_needed}" = "Y" ] || [ "${network_needed}" = "y" ] || [ "${syslog_addr}" != "" ]
+	if [ "${network_needed}" = "Y" ] || [ "${network_needed}" = "y" ] || [ "${slot_in_debug_mode}" != "n" ]
 	then
 		if [ "${Container_mode}" = "early" ]
 		then
@@ -218,16 +280,25 @@ start_container()
 		docker_opts="${docker_opts} --privileged"
 	fi
 
-	# Syslog debug options.
+	# Debug options.
 	#
-	if [ "${syslog_addr}" != "" ]
+	if [ $((${ERIS_DEBUG_MODE} & ${DEBUG_MODE_LOG})) -ne 0 ]
 	then
-		docker_opts="${docker_opts} --log-driver syslog --log-opt syslog-address=udp://${syslog_addr}:${syslog_port} --log-opt tag=eris-${slot} --log-opt cache-disabled=true --log-opt mode=non-blocking"
+		local syslog_port=$((ERIS_DEBUG_LOG_BASE_PORT + slot - MIN_SLOT_NUMBER))
+		docker_opts="${docker_opts} \
+		             --log-driver syslog \
+		             --log-opt syslog-address=udp://${ERIS_DEBUG_LOG_ADDRESS}:${syslog_port} \
+		             --log-opt tag=eris-${slot} \
+		             --log-opt cache-disabled=true \
+		             --log-opt mode=non-blocking"
+	fi
+	if [ $((ERIS_DEBUG_MODE & DEBUG_MODE_LOG)) -ne 0 ]
+	then
 
-		if ! wait_for_address_reachable "${syslog_addr}"
+		if ! wait_for_address_reachable "${ERIS_DEBUG_LOG_ADDRESS}"
 		then
 			printf "%d\n" 11 > "${tmp_error_file}"
-			printf "Unable to reach ${syslog_addr} to send debug traces.\n" >> "${tmp_error_file}"
+			printf "Unable to reach ${ERIS_DEBUG_LOG_ADDRESS} to send debug traces.\n" >> "${tmp_error_file}"
 			mv  "${tmp_error_file}"  "${error_file}"
 			return
 		fi
@@ -240,6 +311,16 @@ start_container()
 	run_code=$?
 	if [ ${run_code} -eq 0 ]; then
 		rm -f "${error_file}"
+
+		# Start gdbserver if needed.
+		#
+		if [ $((${ERIS_DEBUG_MODE} & ${DEBUG_MODE_GDB})) -ne 0 ] && [ "${ERIS_DEBUG_GDB_SLOT}" = "${slot}" ]
+		then
+			app_pid=$(find_container_application_pid "${slot}")
+			gdbserver --attach ":${ERIS_DEBUG_GDB_PORT}" "${app_pid}" >/run/eris-gdbserver.log 2>&1 &
+			echo $! > /run/eris-gdbserver.pid
+			echo "${slot}" > /run/eris-gdbserver.slot
+		fi
 	else
 		if   [ ${run_code} -eq 126 ]; then
 			# Invalid command.
@@ -279,6 +360,27 @@ start_all_containers()
 stop_container()
 {
 	local name="cnt-${1}"
+
+
+	if [ -r /run/eris-gdbserver.pid ] && [ -r /run/eris-gdbserver.slot ]
+	then
+		pid=$(cat /run/eris-gdbserver.pid)
+		slot=$(cat /run/eris-gdbserver.slot)
+		if [ "${slot}" = "${1}" ]
+		then
+			if kill -0 "${pid}" 2>/dev/null
+			then
+	        		kill "${pid}"
+				sleep 1
+				if kill -0 "${pid}" 2>/dev/null
+				then
+		        		kill -9 "${pid}"
+				fi
+			fi
+			rm -f /run/eris-gdbserver.pid
+			rm -f /run/eris-gdbserver.slot
+		fi
+	fi
 
 	docker rm -f "${name}" >/dev/null 2>&1
 }
