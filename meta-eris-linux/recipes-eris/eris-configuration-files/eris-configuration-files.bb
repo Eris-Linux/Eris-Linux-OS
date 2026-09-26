@@ -30,7 +30,6 @@ do_install() {
 	echo ""                                                                    >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "status_upload_period_seconds=300"                                    >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "device_status_upload_period_seconds=-1"                              >> ${D}${sysconfdir}/eris-linux/parameters
-	echo "automatic_system_update=y"                                           >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "automatic_reboot_after_update=n"                                     >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "ntp_server=pool.ntp.org"                                             >> ${D}${sysconfdir}/eris-linux/parameters
 	echo "ntp_enable=yes"                                                      >> ${D}${sysconfdir}/eris-linux/parameters
