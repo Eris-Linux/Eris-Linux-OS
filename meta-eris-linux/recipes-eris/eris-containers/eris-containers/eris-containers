@@ -205,18 +205,29 @@ start_container()
 
 	# Ignore absent container image.
 	#
-	if [ ! -f "${slot_dir}/slot.tar" ]
+	if [ ! -f "${slot_dir}/slot.tar" ] && [ ! -f "${slot_dir}/slot.dkr" }
 	then
 		printf "%d\n" 5 > "${tmp_error_file}"
-		printf "Unable to find container image '%s'.\n" "${slot_dir}/slot.tar" >> "${tmp_error_file}"
+		printf "Unable to find container image '%s'.\n" "${slot_dir}/slot.tar or ${slot_dir}/slot.dkr" >> "${tmp_error_file}"
 		mv  "${tmp_error_file}"  "${error_file}"
 		return
 	fi
 
-	# Import the container image.
+	# Import or load the container image.
 	#
 	docker image rm "${slot_name}" >/dev/null 2>&1
-	output=$(docker import - ${slot_name} < "${slot_dir}/slot.tar" 2>&1)
+	if [ -f  "${slot_dir}/slot.tar" ]
+	then
+
+		output=$(docker import - ${slot_name} < "${slot_dir}/slot.tar" 2>&1)
+
+	elif [ -f  "${slot_dir}/slot.dkr" ]
+	then
+
+		output=$(docker load < "${slot_dir}/slot.dkr" 2>&1)
+		docker tag eris-container-image "${slot_name}:latest"
+	fi
+
 	run_code=$?
 	if [ "${run_code}" -ne 0 ]
 	then
