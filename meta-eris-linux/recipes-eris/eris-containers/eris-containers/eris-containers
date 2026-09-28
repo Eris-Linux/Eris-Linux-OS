@@ -144,6 +144,7 @@ start_container()
 	local redirections=""
 	local privileged=""
 	local network_needed=""
+	local data_uid=""
 	local rest=""
 	local count=${MIN_SLOT_NUMBER}
 	local output=""
@@ -153,7 +154,7 @@ start_container()
 
 	# Read the slot parameters.
 	#
-	while IFS=! read id label version filename b64 graphical redirections privileged network_needed
+	while IFS=! read id label version filename b64 graphical redirections privileged network_needed data_uid
 	do
 		if [ "${count}" = "${slot}" ]; then break; fi
 		count=$((count + 1))
@@ -248,7 +249,7 @@ start_container()
 	# Base options.
 	#
 	local docker_opts="--add-host=host.docker.internal:host-gateway"
-	docker_opts="${docker_opts} --mount type=bind,source=${CONTAINERS_STORAGE},target=/data"
+	docker_opts="${docker_opts} --mount type=bind,source=${CONTAINERS_STORAGE}/slot-${slot},target=/data"
 
 	# Graphical options.
 	#
@@ -289,6 +290,15 @@ start_container()
 	if [ "${privileged:0:1}" = "Y" ] || [ "${privileged:0:1}" = "y" ]
 	then
 		docker_opts="${docker_opts} --privileged"
+	fi
+
+	# Container storage preparation.
+	#
+	mkdir -p ${CONTAINERS_STORAGE}/slot-${slot}
+	if [ "${data_uid}" -ge 0 ] && [ "${data_uid}" -le 4294967293 ]
+	then
+		chown "${data_uid}:${data_uid}" ${CONTAINERS_STORAGE}/slot-${slot}
+		chmod 0700 ${CONTAINERS_STORAGE}/slot-${slot}
 	fi
 
 	# Debug options.
