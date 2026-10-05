@@ -45,7 +45,7 @@ fi
 
 if mount ${MOUNTDEVICE} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
 then
-	mkdir -p "${MOUNTPOINT}/containers"
+	mkdir -p "${MOUNTPOINT}/containers" "${MOUNTPOINT}/docker" || exit 1
 	exit 0
 fi
 
@@ -53,7 +53,7 @@ if fsck.${FILESYSTEM} -p ${MOUNTDEVICE} >/dev/null 2>&1
 then
 	if mount ${MOUNTDEVICE} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
 	then
-		mkdir -p "${MOUNTPOINT}/containers"
+		mkdir -p "${MOUNTPOINT}/containers" "${MOUNTPOINT}/docker" || exit 1
 		exit 0
 	fi
 fi
@@ -71,7 +71,7 @@ fi
 
 if mount ${MOUNTDEVICE} ${MOUNTPOINT} -t ${FILESYSTEM} >/dev/null 2>&1
 then
-	mkdir -p "${MOUNTPOINT}/containers"
+	mkdir -p "${MOUNTPOINT}/containers" "${MOUNTPOINT}/docker" || exit 1
 	exit 0
 fi
 
