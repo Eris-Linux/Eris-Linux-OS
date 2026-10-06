@@ -1,0 +1,33 @@
+From: Eris Linux maintainers
+Subject: [PATCH] gdb: handle readlink errors from the mount namespace helper
+
+A failed readlink is returned by the helper as result -1 and an empty
+payload. Handle this before comparing the payload length with the result,
+otherwise remote library access can abort gdbserver for container targets.
+Preserve errno when receiving the helper message itself fails.
+
+Upstream-Status: Pending
+
+--- a/gdb/nat/linux-namespaces.c
++++ b/gdb/nat/linux-namespaces.c
+@@ -1040,12 +1040,15 @@
+   size = mnsh_recv_intstr (helper, &ret, &error, buf, bufsiz);
+ 
+   if (size < 0)
+-    {
+-      ret = -1;
++    return -1;
++
++  if (ret < 0)
++    {
+       errno = error;
+-    }
+-  else
+-    gdb_assert (size == ret);
++      return -1;
++    }
++
++  gdb_assert (size == ret);
+ 
+   return ret;
+ }
