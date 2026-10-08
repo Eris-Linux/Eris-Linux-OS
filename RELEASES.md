@@ -1,5 +1,11 @@
 # Release notes
 
+## 1.0.3 - 2026-10-08
+
+- Web HMI: add a new "Release Note" page (link at the end of the home page).
+- Web HMI: small improvements in device display ("Last seen" field).
+- Web HMI: fix an error that occured when renaming a device.
+
 ## 1.0.2 — 2026-10-06
 
 - Containers: add debug settings through `/run/eris-debug`, with remote syslog
