@@ -4,4 +4,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fragment.cfg"
 SRC_URI += "file://device-mapper-fragment.cfg"
 SRC_URI += "file://f2fs-fragment.cfg"
+SRC_URI += "file://no-magic-sysrq.cfg"
 
