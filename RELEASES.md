@@ -1,10 +1,19 @@
 # Release notes
 
+## 1.0.4 - 2026-10-09
+
+- Raspberry Pi: disable magic sysrq
+- BeagleBone: disable magic sysrq
+- Web HMI add a `content` button to device status.
+- Web API: improve error handling and remove non-atomic modifications of database.
+
 ## 1.0.3 - 2026-10-08
 
 - Web HMI: add a new "Release Note" page (link at the end of the home page).
 - Web HMI: small improvements in device display ("Last seen" field).
 - Web HMI: fix an error that occured when renaming a device.
+- Web HMI: fix device list refresh on `my-devices` tab.
+- Database: add `SPDX` and `Manifest` fields.
 
 ## 1.0.2 — 2026-10-06
 
