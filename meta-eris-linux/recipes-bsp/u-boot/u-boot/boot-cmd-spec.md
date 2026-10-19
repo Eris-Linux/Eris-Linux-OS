@@ -1,31 +1,87 @@
 # Specifications for boot-cmd script.
 
-If the number of remaining attempt for the candidate partition is
-greater than zero, the script must decrease the number of remaining
-attempts and boot on candidate partition.
+## Finite State Machine.
 
-When a boot is successful, a Linux script will reset the number of
-remaining attempts to 3.
+The Eris Linux boot script is based on a FSM (Finite State Machine).
+
+### Pseudo-code
+
+```
+
+ready_to_boot_on = 0
+
+if boot_state == "":
+	boot_state = ERIS_BOOT_STATUS_STABLE
+	confirmed_partition = ERIS_SYSTEM_A_PART
+	boot_count = ERIS_MAX_BOOT_ATTEMPTS
+
+if boot_state == ERIS_BOOT_STATUS_STABLE:
+	if boot_count > 0:
+		boot_count--
+		saveenv
+		ready_to_boot_on = confirmed_partition
+	else:
+		boot_state = ERIS_BOOT_STATUS_REPAIR
+		boot_count = ERIS_MAX_BOOT_ATTEMPTS
+		recovery_done = false
+		saveenv
+
+if boot_state == ERIS_BOOT_STATUS_TRIAL:
+	if boot_count > 0:
+		boot_count--
+		saveenv
+		boot_on(candidate_partition)
+	else:
+		boot_state = ERIS_BOOT_STATUS_ROLLBACK
+		boot_count = ERIS_MAX_BOOT_ATTEMPTS
+		recovery_done = false
+		saveenv
+		save_failure_event(candidate_partition)
+
+if boot_state == ERIS_BOOT_STATUS_ROLLBACK:
+	if recovery_done == false:
+		restore_save_data()
+		recovery_done = true
+	if boot_count > 0:
+		boot_count--
+		saveenv
+		boot_on(confirmed_partition)
+	else:
+		boot_state = ERIS_BOOT_STATUS_REPAIR
+		boot_count = ERIS_MAX_BOOT_ATTEMPTS
+		recovery_done = false
+		saveenv
+
+if boot_state == ERIS_BOOT_STATUS_REPAIR:
+	if recovery_done == false:
+		repair_data()
+		recovery_done = true
+		saveenv
+	if boot_count > 0:
+		boot_count--
+		saveenv
+		boot_on(confirmed partition)
+	else:
+		erase_all_data()
+		boot_count = ERIS_MAX_BOOT_ATTEMPTS
+		boot_state = ERIS_BOOT_STATUS_RESET
+		recovery_done = false
+
+if boot_state == ERIS_BOOT_STATUS_RESET:
+	if boot_count > 0:
+		boot_count--
+		saveenv
+		boot_on(confirmed partition)
+	else:
+		??????
+```	
 
 
-If the number of attempt is zero and the rollback level is 0 (no rollback),
-the script must set the rollback level to 1, switch the candidate partition,
-reset the number of attempts to 3 and proceed as in the first case (decrease
-and boot on the candidate partition).
+### Linux script when boot ok
 
-
-If the number of attempt is zero, and the rollback level is 1 (simple rollback),
-the script must erase all user data, system data and installed containers,
-then set rollback level to 2, reset number of attempts to 3 and proceed as
-in the first case.
-
-If the number of attempts is zero and the rollback level is more than 1,
-the boot script must boot on the recovery initramfs.
-
-
-During contact with the device manager, the rollback level is transmitted.
-The device manager won't propose anymore an image that failed to boot.
-
-
-After a successful image install, the rollback level is restored to zero.
-
+```
+confirmed_partition = candidate_partition;
+candidate_partition = NONE;
+boot_state = ERIS_BOOT_STATUS_STABLE;
+boot_count = 3;
+```
