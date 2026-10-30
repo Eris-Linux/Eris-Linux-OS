@@ -95,3 +95,10 @@ IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-devel', ' 
 IMAGE_INSTALL:append = "${@bb.utils.contains('DISTRO_FEATURES', 'eris-devel', ' build-timestamp', '', d)}"
 
 TOOLCHAIN_TARGET_TASK:append = " liberis-dev"
+
+# Recovery is a separate minimal image. Do not bundle it into the normal kernel.
+ERIS_RECOVERY_IMAGE ?= "recovery-rootfs-image"
+ERIS_RECOVERY_SUFFIX = "${@'cpio.gz.u-boot' if d.getVar('KERNEL_BOOTCMD') == 'bootm' else 'cpio.gz'}"
+ERIS_RECOVERY_BOOT_FILES = "${@bb.utils.contains('DISTRO_FEATURES', 'no-update', '', '${ERIS_RECOVERY_IMAGE}-${MACHINE}.${ERIS_RECOVERY_SUFFIX};recovery-ramfs.${ERIS_RECOVERY_SUFFIX}', d)}"
+IMAGE_BOOT_FILES:append = " ${ERIS_RECOVERY_BOOT_FILES}"
+do_image_wic[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'no-update', '', '${ERIS_RECOVERY_IMAGE}:do_image_complete', d)}"

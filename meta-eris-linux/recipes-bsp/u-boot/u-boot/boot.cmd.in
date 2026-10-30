@@ -66,9 +66,9 @@
 
 # Defaut value for local variables.
 #
-_boot_on="0"
-_initramfs="0"
-_initramfs_size=0
+setenv _boot_on "0"
+setenv _initramfs "0"
+setenv _initramfs_size "0"
 
 
 # Set a default configuration for environment variables at first boot.
@@ -80,12 +80,36 @@ if test "${boot_state}" != "@@ERIS_BOOT_STATUS_REPAIR@@"; then
 if test "${boot_state}" != "@@ERIS_BOOT_STATUS_RESET@@"; then
 if test "${boot_state}" != "@@ERIS_BOOT_STATUS_RESCUE@@"; then
 	setenv boot_state "@@ERIS_BOOT_STATUS_STABLE@@"
-	setenv confirmed_partition "@@ERIS_SYSTEM_A_PART@@"
+	if test "${candidate_partition}" = "@@ERIS_SYSTEM_A_PART@@" -o "${candidate_partition}" = "@@ERIS_SYSTEM_B_PART@@"
+    then
+        # Preserve the selected system when migrating a legacy environment.
+        setenv confirmed_partition "${candidate_partition}"
+    else
+        setenv confirmed_partition "@@ERIS_SYSTEM_A_PART@@"
+    fi
 	setenv candidate_partition ""
 	setenv boot_attempts @@ERIS_MAX_BOOT_ATTEMPTS@@
 	setenv recovery_done "0"
 fi; fi; fi; fi; fi; fi
 
+
+# Validate persistent values before selecting any partition.
+if test "${confirmed_partition}" != "@@ERIS_SYSTEM_A_PART@@" -a "${confirmed_partition}" != "@@ERIS_SYSTEM_B_PART@@"
+then
+    setenv confirmed_partition @@ERIS_SYSTEM_A_PART@@
+    setenv boot_state @@ERIS_BOOT_STATUS_RESCUE@@
+fi
+if test "${boot_attempts}" != "0" -a "${boot_attempts}" != "1" -a "${boot_attempts}" != "2" -a "${boot_attempts}" != "3"
+then
+    setenv boot_attempts 0
+fi
+if test "${boot_state}" = "@@ERIS_BOOT_STATUS_TRIAL@@"
+then
+    if test "${candidate_partition}" != "@@ERIS_SYSTEM_A_PART@@" -a "${candidate_partition}" != "@@ERIS_SYSTEM_B_PART@@"
+    then
+        setenv boot_attempts 0
+    fi
+fi
 
 # Turn the boot LED on.
 #
@@ -117,10 +141,16 @@ then
 			gpio read _value @@ERIS_RESET_GPIO_IN@@
 			if test "${_value}" = "0"
 			then
+				setenv rollback_level 2
 				setenv boot_state    "@@ERIS_BOOT_STATUS_RESET@@"
 				setenv boot_attempts  @@ERIS_MAX_BOOT_ATTEMPTS@@
 				setenv recovery_done  "0"
-				saveenv
+				if saveenv; then
+					echo "Boot environment saved."
+				else
+					echo "Cannot persist boot state; halted."
+					while test 1 -eq 1; do sleep 1; done
+				fi
 			fi
 		fi
 		gpio clear @@ERIS_RESET_GPIO_OUT@@
@@ -136,13 +166,23 @@ then
 	if test "${boot_attempts}" -gt 0
 	then
 		setexpr boot_attempts ${boot_attempts} - 1
-		saveenv
-		_boot_on="${confirmed_partition}"
+		if saveenv; then
+			echo "Boot environment saved."
+		else
+			echo "Cannot persist boot state; halted."
+			while test 1 -eq 1; do sleep 1; done
+		fi
+		setenv _boot_on "${confirmed_partition}"
 	else
 		setenv boot_state    "@@ERIS_BOOT_STATUS_REPAIR@@"
 		setenv boot_attempts  @@ERIS_MAX_BOOT_ATTEMPTS@@
 		setenv recovery_done  "0"
-		saveenv
+		if saveenv; then
+			echo "Boot environment saved."
+		else
+			echo "Cannot persist boot state; halted."
+			while test 1 -eq 1; do sleep 1; done
+		fi
 	fi
 fi
 
@@ -157,14 +197,25 @@ then
 		if test "${boot_attempts}" -gt 0
 		then
 			setexpr boot_attempts ${boot_attempts} - 1
-			saveenv
-			_boot_on="${candidate_partition}"
+			if saveenv; then
+				echo "Boot environment saved."
+			else
+				echo "Cannot persist boot state; halted."
+				while test 1 -eq 1; do sleep 1; done
+			fi
+			setenv _boot_on "${candidate_partition}"
 		else
-			#save_failure_event(${candidate_partition})
+			setenv failed_partition "${candidate_partition}"
+			setenv rollback_level 1
 			setenv boot_state    "@@ERIS_BOOT_STATUS_ROLLBACK@@"
 			setenv boot_attempts  @@ERIS_MAX_BOOT_ATTEMPTS@@
 			setenv recovery_done  "0"
-			saveenv
+			if saveenv; then
+				echo "Boot environment saved."
+			else
+				echo "Cannot persist boot state; halted."
+				while test 1 -eq 1; do sleep 1; done
+			fi
 		fi
 	fi
 fi
@@ -179,18 +230,28 @@ then
 	then
 		if test "${recovery_done}" != "1"
 		then
-			_initramfs="1"
+			setenv _initramfs "1"
 		else
 			if test "${boot_attempts}" -gt 0
 			then
 				setexpr boot_attempts ${boot_attempts} - 1
-				saveenv
-				_boot_on="${confirmed_partition}"
+				if saveenv; then
+					echo "Boot environment saved."
+				else
+					echo "Cannot persist boot state; halted."
+					while test 1 -eq 1; do sleep 1; done
+				fi
+				setenv _boot_on "${confirmed_partition}"
 			else
 				setenv boot_state    "@@ERIS_BOOT_STATUS_REPAIR@@"
 				setenv boot_attempts  @@ERIS_MAX_BOOT_ATTEMPTS@@
 				setenv recovery_done  "0"
-				saveenv
+				if saveenv; then
+					echo "Boot environment saved."
+				else
+					echo "Cannot persist boot state; halted."
+					while test 1 -eq 1; do sleep 1; done
+				fi
 			fi
 		fi
 	fi
@@ -206,18 +267,29 @@ then
 	then
 		if test "${recovery_done}" != "1"
 		then
-			_initramfs="1"
+			setenv _initramfs "1"
 		else
 			if test "${boot_attempts}" -gt 0
 			then
 				setexpr boot_attempts ${boot_attempts} - 1
-				saveenv
-				_boot_on="${confirmed_partition}"
+				if saveenv; then
+					echo "Boot environment saved."
+				else
+					echo "Cannot persist boot state; halted."
+					while test 1 -eq 1; do sleep 1; done
+				fi
+				setenv _boot_on "${confirmed_partition}"
 			else
+				setenv rollback_level 2
 				setenv boot_state    "@@ERIS_BOOT_STATUS_RESET@@"
 				setenv boot_attempts  @@ERIS_MAX_BOOT_ATTEMPTS@@
 				setenv recovery_done  "0"
-				saveenv
+				if saveenv; then
+					echo "Boot environment saved."
+				else
+					echo "Cannot persist boot state; halted."
+					while test 1 -eq 1; do sleep 1; done
+				fi
 			fi
 		fi
 	fi
@@ -232,21 +304,66 @@ then
 	then
 		if test "${recovery_done}" != "1"
 		then
-			_initramfs="1"
+			setenv _initramfs "1"
 		else
 			if test "${boot_attempts}" -gt 0
 			then
 				setexpr boot_attempts ${boot_attempts} - 1
-				saveenv
-				_boot_on="${confirmed_partition}"
+				if saveenv; then
+					echo "Boot environment saved."
+				else
+					echo "Cannot persist boot state; halted."
+					while test 1 -eq 1; do sleep 1; done
+				fi
+				setenv _boot_on "${confirmed_partition}"
 			else
 				setenv boot_state   "@@ERIS_BOOT_STATUS_RESCUE@@"
-				saveenv
+				if saveenv; then
+					echo "Boot environment saved."
+				else
+					echo "Cannot persist boot state; halted."
+					while test 1 -eq 1; do sleep 1; done
+				fi
 			fi
 		fi
 	fi
 fi
 
+
+# Bound recovery boots too: a crash or power loss must not loop forever.
+if test "${_initramfs}" = "1"
+then
+    if test "${boot_attempts}" -gt 0
+    then
+        setexpr boot_attempts ${boot_attempts} - 1
+    else
+        if test "${boot_state}" = "@@ERIS_BOOT_STATUS_ROLLBACK@@"
+        then
+            setenv boot_state @@ERIS_BOOT_STATUS_REPAIR@@
+            setenv boot_attempts @@ERIS_MAX_BOOT_ATTEMPTS@@
+        else
+            if test "${boot_state}" = "@@ERIS_BOOT_STATUS_REPAIR@@"
+            then
+                setenv rollback_level 2
+                setenv boot_state @@ERIS_BOOT_STATUS_RESET@@
+                setenv boot_attempts @@ERIS_MAX_BOOT_ATTEMPTS@@
+            else
+                setenv boot_state @@ERIS_BOOT_STATUS_RESCUE@@
+                setenv _initramfs 0
+            fi
+        fi
+        if test "${_initramfs}" = "1"
+        then
+            setexpr boot_attempts ${boot_attempts} - 1
+        fi
+    fi
+    if saveenv; then
+        echo "Recovery attempt saved."
+    else
+        echo "Cannot persist recovery state; halted."
+        while test 1 -eq 1; do sleep 1; done
+    fi
+fi
 
 # Rescue state: a manual intervention is needed.
 #
@@ -290,8 +407,8 @@ then
 	then
 		echo "Kernel loaded"
 	else
-		echo "Unable to load kernel from partition ${candidate_partition}."
-		_boot_on=0
+		echo "Unable to load kernel from partition ${_boot_on}."
+		setenv _boot_on "0"
 	fi
 else
 	if test "${_initramfs}" = "1"
@@ -301,7 +418,7 @@ else
 			echo "Recovery kernel loaded."
 		else
 			echo "Unable to load recovery kernel."
-			_initramfs="0"
+			setenv _initramfs "0"
 		fi
 	fi
 fi
@@ -320,11 +437,11 @@ then
 				echo "Recovery device tree loaded."
 			else
 				echo "Unable to select recovery device tree at ${@@ERIS_FDT_ADDR_VAR@@}."
-				_initramfs="0"
+				setenv _initramfs "0"
 			fi
 		else
 			echo "Unable to load recovery device tree."
-			_initramfs="0"
+			setenv _initramfs "0"
 		fi
 	else
 		if test "${_boot_on}" != 0
@@ -336,11 +453,11 @@ then
 					echo "Device tree loaded."
 				else
 					echo "Unable to select device tree at ${@@ERIS_FDT_ADDR_VAR@@}."
-					_boot_on="0"
+					setenv _boot_on "0"
 				fi
 			else
 				echo "Unable to load device tree from partition ${_boot_on}."
-				_boot_on="0"
+				setenv _boot_on "0"
 			fi
 		fi
 	fi
@@ -352,8 +469,8 @@ else
 			echo "Firmware device tree present."
 		else
 			echo "Unable to load firmware device tree at ${@@ERIS_FDT_ADDR_VAR@@}."
-			_boot_on="0"
-			_initramfs="0"
+			setenv _boot_on "0"
+			setenv _initramfs "0"
 		fi
 	fi
 fi
@@ -366,10 +483,10 @@ then
 
 	if load @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:@@ERIS_BOOT_PART@@ ${ramdisk_addr_r} /@@ERIS_RECOVERY_RAMFS@@
 	then
-		_initramfs_size="${filesize}"
+		setenv _initramfs_size "${filesize}"
 	else
 		echo "Unable to load recovery initramfs."
-		_initramfs=0
+		setenv _initramfs "0"
 	fi
 fi
 
@@ -397,14 +514,19 @@ then
 		if part uuid @@ERIS_BOOT_MEDIA@@ @@ERIS_BLOCK_DEVICE@@:${_boot_on} root_partuuid
 		then
 			setenv bootargs "${bootargs} root=PARTUUID=${root_partuuid} quiet rootwait ro init=/sbin/early-init @@ERIS_CONSOLE@@"
-			_boot_on_ramfs="-"
+			setenv _boot_on_ramfs "-"
 		else
 			echo "Unable to get UUID for partition ${_boot_on}."
-			_boot_on="0"
+			setenv _boot_on "0"
 		fi
 	else
-		setenv bootargs "${bootargs} rdinit=/init quiet rootwait @@ERIS_CONSOLE@@"
-		_boot_on_ramfs="${ramdisk_addr_r}:${_initramfs_size}"
+		setenv bootargs "${bootargs} rdinit=/init @@ERIS_CONSOLE@@ eris.boot_state=${boot_state} eris.confirmed_partition=${confirmed_partition} eris.candidate_partition=${candidate_partition}"
+		if test "@@ERIS_BOOT_COMMAND@@" = "bootm"
+        then
+            setenv _boot_on_ramfs "${ramdisk_addr_r}"
+        else
+            setenv _boot_on_ramfs "${ramdisk_addr_r}:${_initramfs_size}"
+        fi
 	fi
 fi
 

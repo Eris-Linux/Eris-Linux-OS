@@ -1,87 +1,66 @@
-# Specifications for boot-cmd script.
+# Eris boot protocol
 
-## Finite State Machine.
+The persistent environment uses these literal state names: `stable`, `trial`,
+`rollback`, `repair`, `reset`, `rescue`. SYSTEM-A is partition 2, SYSTEM-B is
+partition 3. A stage has three attempts; each attempt is saved before boot.
+Failure to save the environment halts boot rather than losing the retry budget.
 
-The Eris Linux boot script is based on a FSM (Finite State Machine).
+| State | Action | When the attempt budget is exhausted |
+| --- | --- | --- |
+| stable | Boot confirmed_partition | repair |
+| trial | Boot candidate_partition | rollback |
+| rollback | Recovery restores the saved data, then boot confirmed_partition | repair |
+| repair | Recovery repairs DATA, then boot confirmed_partition | reset |
+| reset | Recovery recreates DATA, then boot confirmed_partition | rescue |
+| rescue | Halt for manual intervention | Remain halted |
 
-### Pseudo-code
+The reset GPIO requests `reset`, clears `recovery_done`, and resets the budget.
+Kernel, DTB, UUID or ramdisk loading failures trigger a reboot. Recovery boots
+also consume attempts: crashes and power failures eventually reach rescue.
+An uninitialized environment starts on SYSTEM-A in stable state. When migrating
+a legacy environment, its valid candidate partition is preserved as confirmed. An invalid
+confirmed partition enters rescue; an invalid candidate exhausts trial.
 
-```
+## Linux tools
 
-ready_to_boot_on = 0
+`force-boot-on-partition` and the updater schedule a trial, preserving the
+confirmed partition. `boot-ok` confirms the actual running partition only after
+the optional application health check passes, clears the candidate, returns to
+stable and resets the budget. It must never infer the running root partition
+from a pending candidate in the environment.
 
-if boot_state == "":
-	boot_state = ERIS_BOOT_STATUS_STABLE
-	confirmed_partition = ERIS_SYSTEM_A_PART
-	boot_count = ERIS_MAX_BOOT_ATTEMPTS
+`rollback_level` remains a manager reporting field: 1 for rollback and 2 for
+reset. `failed_partition` records an exhausted trial for diagnostics.
+A new image installation clears the reporting level; boot confirmation preserves it.
 
-if boot_state == ERIS_BOOT_STATUS_STABLE:
-	if boot_count > 0:
-		boot_count--
-		saveenv
-		ready_to_boot_on = confirmed_partition
-	else:
-		boot_state = ERIS_BOOT_STATUS_REPAIR
-		boot_count = ERIS_MAX_BOOT_ATTEMPTS
-		recovery_done = false
-		saveenv
+## Recovery application contract (implementation pending)
 
-if boot_state == ERIS_BOOT_STATUS_TRIAL:
-	if boot_count > 0:
-		boot_count--
-		saveenv
-		boot_on(candidate_partition)
-	else:
-		boot_state = ERIS_BOOT_STATUS_ROLLBACK
-		boot_count = ERIS_MAX_BOOT_ATTEMPTS
-		recovery_done = false
-		saveenv
-		save_failure_event(candidate_partition)
+Recovery boots from BOOT with `rdinit=/init`. The command line supplies
+`eris.boot_state`, `eris.confirmed_partition`, and `eris.candidate_partition`.
+The environment is authoritative; command-line values are diagnostic context.
 
-if boot_state == ERIS_BOOT_STATUS_ROLLBACK:
-	if recovery_done == false:
-		restore_save_data()
-		recovery_done = true
-	if boot_count > 0:
-		boot_count--
-		saveenv
-		boot_on(confirmed_partition)
-	else:
-		boot_state = ERIS_BOOT_STATUS_REPAIR
-		boot_count = ERIS_MAX_BOOT_ATTEMPTS
-		recovery_done = false
-		saveenv
+After successfully completing the operation for the current state, recovery
+must atomically save `recovery_done=1` and `boot_attempts=3`, preserving the state
+and confirmed partition, then reboot. It must not acknowledge a failed or
+partial operation. The operation must tolerate interruption and be safe to
+retry. In particular DATA reset must recreate both the LUKS container (when
+configured) and its filesystem, without relying on Linux to open an erased
+LUKS header. No DATA erasure is performed in U-Boot.
 
-if boot_state == ERIS_BOOT_STATUS_REPAIR:
-	if recovery_done == false:
-		repair_data()
-		recovery_done = true
-		saveenv
-	if boot_count > 0:
-		boot_count--
-		saveenv
-		boot_on(confirmed partition)
-	else:
-		erase_all_data()
-		boot_count = ERIS_MAX_BOOT_ATTEMPTS
-		boot_state = ERIS_BOOT_STATUS_RESET
-		recovery_done = false
+Until the application is integrated, `/init` mounts the virtual filesystems
+and starts a diagnostic shell; it does not set recovery_done.
 
-if boot_state == ERIS_BOOT_STATUS_RESET:
-	if boot_count > 0:
-		boot_count--
-		saveenv
-		boot_on(confirmed partition)
-	else:
-		??????
-```	
+## Build artifacts
 
+The normal WIC image depends on `recovery-rootfs-image:do_image_complete` and
+copies its archive to BOOT. The normal kernel and device trees on BOOT are used
+for recovery. The archive is external to the kernel. `bootz` and `booti` use
+`recovery-ramfs.cpio.gz` and an address:size argument; `bootm` uses the legacy
+U-Boot ramdisk `recovery-ramfs.cpio.gz.u-boot` and an address argument.
 
-### Linux script when boot ok
+Validate on each board: persistent environment access from both Linux and
+U-Boot, compatible recovery kernel drivers built in, nonoverlapping load
+addresses, BOOT capacity, GPIO detection, and reset/power-cut scenarios.
 
-```
-confirmed_partition = candidate_partition;
-candidate_partition = NONE;
-boot_state = ERIS_BOOT_STATUS_STABLE;
-boot_count = 3;
-```
+Host regression checks: `python3 -m unittest discover -s tests` in the OS repo.
+These mock commands and do not replace a U-Boot hush or board test.

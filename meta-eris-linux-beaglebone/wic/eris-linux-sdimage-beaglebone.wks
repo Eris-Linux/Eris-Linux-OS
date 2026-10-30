@@ -1,7 +1,7 @@
 #
 # Eris-Linux partitionning for BeagleBoneBlack sdcard.
 #
-part /boot --label boot       --ondisk mmcblk0 --fixed-size 32M --align 4096 --source bootimg-partition --fstype=vfat --active
+part /boot --label boot       --ondisk mmcblk0 --fixed-size 128M --align 4096 --source bootimg-partition --fstype=vfat --active
 part /     --label system-a   --ondisk mmcblk0 --size 512M      --align 4096 --source rootfs            --fstype=ext4
 
 
