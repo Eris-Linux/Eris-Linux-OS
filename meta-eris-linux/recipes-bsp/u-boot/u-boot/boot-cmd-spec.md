@@ -33,7 +33,7 @@ from a pending candidate in the environment.
 reset. `failed_partition` records an exhausted trial for diagnostics.
 A new image installation clears the reporting level; boot confirmation preserves it.
 
-## Recovery application contract (implementation pending)
+## Recovery application contract
 
 Recovery boots from BOOT with `rdinit=/init`. The command line supplies
 `eris.boot_state`, `eris.confirmed_partition`, and `eris.candidate_partition`.
@@ -47,8 +47,11 @@ retry. In particular DATA reset must recreate both the LUKS container (when
 configured) and its filesystem, without relying on Linux to open an erased
 LUKS header. No DATA erasure is performed in U-Boot.
 
-Until the application is integrated, `/init` mounts the virtual filesystems
-and starts a diagnostic shell; it does not set recovery_done.
+`/init` mounts the virtual filesystems, then executes the C supervisor as PID 1.
+The first implementation supports F2FS repair and DATA reset, including LUKS.
+Rollback restoration remains unimplemented until a snapshot producer and format
+are defined; that operation fails without acknowledgment and consumes attempts.
+See the DM layer's recovery-init README for the implementation and host tests.
 
 ## Build artifacts
 
