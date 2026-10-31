@@ -1,5 +1,10 @@
 # Release notes
 
+## 1.0.5 - 2026-10-31
+
+- Device Manager protection against automatic 1.0.x -> 1.1.x branch migration.
+- Fix server upload limit.
+
 ## 1.0.4 - 2026-10-09
 
 - Raspberry Pi: disable magic sysrq
