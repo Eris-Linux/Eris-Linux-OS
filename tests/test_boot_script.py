@@ -31,6 +31,7 @@ setenv() { local key="$1"; shift; printf -v "$key" '%s' "$*"; export "$key"; }
 setexpr() { printf -v "$1" '%s' "$(($2 - $4))"; }
 saveenv() {
     echo "SAVE:$boot_state:$boot_attempts:$confirmed_partition:$candidate_partition:$recovery_done"
+    echo "VERSIONS:${candidate_version}:${failed_version}"
     test "${FAIL_SAVE:-0}" = 0
 }
 load() { test "${FAIL_LOAD:-0}" = 0; }
@@ -59,6 +60,16 @@ class BootScriptTest(unittest.TestCase):
 
     def test_trial(self):
         self.assertIn('BOOT:trial:3:0:-:', self.run_boot('trial'))
+
+    def test_failed_trial_records_version(self):
+        out = self.run_boot('trial', '0', candidate_version='1.1.0-dev-9',
+                            failed_version='1.1.0-dev-8')
+        self.assertIn('VERSIONS:1.1.0-dev-9:1.1.0-dev-9', out)
+
+    def test_manual_trial_preserves_failed_version(self):
+        out = self.run_boot('trial', '0', candidate_version='',
+                            failed_version='1.1.0-dev-9')
+        self.assertIn('VERSIONS::1.1.0-dev-9', out)
 
     def test_exhausted_system_boots(self):
         for state, next_state in [('stable', 'repair'), ('trial', 'rollback'),

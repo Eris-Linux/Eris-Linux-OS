@@ -6,6 +6,8 @@
 # We use and modify the following environment variables:
 # - confirmed_partition: definitely confirmed partition number (after a whole successful boot).
 # - candidate_partition: the partition number on which we'll try to boot.
+# - candidate_version: authenticated version scheduled by the updater.
+# - failed_version: last exhausted trial version, preserved across boot confirmation.
 # - boot_state: current status of the finite-state-machine.
 # - boot_attempts: the remaining attempts for current stage.
 # - recovery_done: "1" when a successful recovering for initramfs has occurred, "0" otherwise.
@@ -206,6 +208,10 @@ then
 			setenv _boot_on "${candidate_partition}"
 		else
 			setenv failed_partition "${candidate_partition}"
+			if test "${candidate_version}" != ""
+			then
+				setenv failed_version "${candidate_version}"
+			fi
 			setenv rollback_level 1
 			setenv boot_state    "@@ERIS_BOOT_STATUS_ROLLBACK@@"
 			setenv boot_attempts  @@ERIS_MAX_BOOT_ATTEMPTS@@

@@ -33,6 +33,35 @@ from a pending candidate in the environment.
 reset. `failed_partition` records an exhausted trial for diagnostics.
 A new image installation clears the reporting level; boot confirmation preserves it.
 
+## Local rejection of failed image versions
+
+After authenticating the archive signature, the updater reads
+`usr/share/eris-linux/system-version` from the rootfs tarball. It rejects a
+version equal to persistent `failed_version` before writing the inactive
+partition. Invalid metadata or an unreadable boot environment also prevent
+installation. The image URL is not used as the version identifier.
+
+After installation, the updater saves `candidate_version`, candidate partition,
+`boot_state=trial`, `boot_attempts=3`, `recovery_done=0` and `rollback_level=0`
+in one environment store, checking the failed version again before scheduling.
+When trial attempts are exhausted, U-Boot copies nonempty `candidate_version`
+to `failed_version` in the same store as the transition to rollback.
+
+Boot confirmation removes `candidate_version` but preserves `failed_version`.
+Scheduling a new version does not clear it. Manual partition selection clears
+the candidate version, so an unversioned manual trial cannot erase a recorded
+failure. Only the last failed version is remembered. A corrected image must
+have a new version; this is a local policy, with no new Device Manager field.
+
+Rejected known-failed versions do not consume the updater's installation error
+budget or schedule a reboot. The server may still propose the image, so it can
+still be downloaded and authenticated before local rejection.
+
+Deploy the updated boot.scr AND updater, including in the confirmed fallback
+rootfs. An older updater on the fallback system cannot enforce this policy.
+For a fresh board test, install a normal SD image containing these changes,
+then send a higher-version image with deliberately failing boot validation.
+
 ## Recovery application contract
 
 Recovery boots from BOOT with `rdinit=/init`. The command line supplies
