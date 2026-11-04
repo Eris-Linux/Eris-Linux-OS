@@ -1,0 +1,15 @@
+#!/bin/sh
+# Restore identity and connectivity after DATA recreation, before networking.
+[ -x /usr/sbin/eris-provisioning ] || exit 0
+# Boards without the MMC/BOOT layout (for example the no-update QEMU image)
+# have no recovery snapshot store.
+. /usr/share/eris-linux/partitions
+[ -b "${ERIS_STORAGE_DEVICE}${ERIS_PARTITION_SEPARATOR}${ERIS_PARTITION_BOOT}" ] || exit 0
+
+if ! grep -qs ' /boot ' /proc/mounts || ! /usr/sbin/eris-provisioning restore
+then
+    echo "Eris Linux: provisioning restore failed; refusing an unprovisioned boot." >&2
+    sync
+    reboot -f
+    while :; do sleep 60; done
+fi
