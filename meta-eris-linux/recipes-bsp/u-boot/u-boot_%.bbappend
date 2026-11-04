@@ -11,7 +11,57 @@ SRC_URI += "                      \
 
 DEPENDS += "u-boot-mkimage-native"
 
-inherit deploy
+inherit deploy eris-uboot-env
+
+python eris_prepare_mmc_env() {
+    if d.getVar('ERIS_UBOOT_ENV_RAW') == '1':
+        import os
+        with open(os.path.join(d.getVar('WORKDIR'), 'eris-mmc-env.cfg'), 'w') as fragment:
+            fragment.write(eris_uboot_env_fragment(d))
+}
+do_configure[prefuncs] += "eris_prepare_mmc_env"
+
+# cml1's find_cfgs() reads file:// fragments directly from the layer, rather
+# than their unpacked WORKDIR copies. Merge our generated fragment explicitly,
+# after the vendor fragments, and resolve Kconfig again.
+do_configure:append() {
+	if [ "${ERIS_UBOOT_ENV_RAW}" = "1" ]; then
+		for configdir in ${@' '.join(d.getVar('B') + '/' + config for config in d.getVar('UBOOT_MACHINE').split()) if d.getVar('UBOOT_CONFIG') else d.getVar('B')}; do
+			merge_config.sh -m -O "$configdir" "$configdir/.config" "${WORKDIR}/eris-mmc-env.cfg"
+			oe_runmake -C ${S} O="$configdir" olddefconfig
+		done
+	fi
+}
+
+python eris_check_mmc_env() {
+    if d.getVar('ERIS_UBOOT_ENV_RAW') != '1':
+        return
+    import os
+    directories = [d.getVar('B')]
+    if d.getVar('UBOOT_CONFIG'):
+        directories = [os.path.join(d.getVar('B'), config) for config in d.getVar('UBOOT_MACHINE').split()]
+    expected = eris_uboot_env_fragment(d).splitlines()
+    for directory in directories:
+        with open(os.path.join(directory, '.config')) as config:
+            actual = set(config.read().splitlines())
+        for line in expected:
+            # Options absent from this U-Boot version need not have a # line.
+            if line.startswith('# '):
+                option = line.split()[1]
+                if any(value.startswith(option + '=') for value in actual):
+                    bb.fatal('%s is unexpectedly enabled in %s' % (option, directory))
+            elif line not in actual:
+                bb.fatal('Missing required MMC environment setting %s in %s' % (line, directory))
+}
+do_configure[postfuncs] += "eris_check_mmc_env"
+
+# The same package supplies Linux and recovery. Remove the vendor FAT config
+# after all board-specific installation hooks have run.
+eris_cleanup_vendor_env_config() {
+	rm -f ${D}${sysconfdir}/fw_env.config
+}
+do_install[postfuncs] += "eris_cleanup_vendor_env_config"
+RDEPENDS:${PN}-env += "eris-uboot-env"
 
 ERIS_BLOCK_DEVICE    ?= "0"
 ERIS_BOOT_COMMAND    ?= "bootz"

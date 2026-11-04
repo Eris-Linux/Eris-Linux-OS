@@ -13,6 +13,11 @@ IMAGE_LINK_NAME="${IMAGE_BASENAME}-${ERIS_SYSTEM_MODEL}"
 IMAGE_NAME="${IMAGE_BASENAME}_${ERIS_SYSTEM_MODEL}_${ERIS_SYSTEM_VERSION}_${ERIS_SYSTEM_TYPE}"
 
 inherit core-image
+inherit eris-uboot-env
+
+# Accept the existing WKS_FILE names used by Cooker; prefer their templates.
+WKS_FILES:prepend = "${@(d.getVar('WKS_FILE') + '.in ') if d.getVar('ERIS_UBOOT_ENV_RAW') == '1' and not d.getVar('WKS_FILE').endswith('.in') else ''}"
+do_image_wic[depends] += "${@'eris-uboot-env:do_deploy' if d.getVar('ERIS_UBOOT_ENV_RAW') == '1' else ''}"
 
 # ---------------------------------------------------------------------------
 # User access.
