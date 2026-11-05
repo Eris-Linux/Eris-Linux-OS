@@ -4,5 +4,6 @@
 # MLO and u-boot.img are loaded from FAT; keep the first MiB reserved anyway.
 part --ondisk mmcblk0 --no-table --fstype=none --source rawcopy --sourceparams="file=${ERIS_UBOOT_ENV_IMAGE}" --offset=${ERIS_UBOOT_ENV_OFFSET_KIB}K --fixed-size=${ERIS_UBOOT_ENV_SIZE_KIB}K
 part --ondisk mmcblk0 --no-table --fstype=none --source rawcopy --sourceparams="file=${ERIS_UBOOT_ENV_IMAGE}" --offset=${ERIS_UBOOT_ENV_OFFSET_REDUND_KIB}K --fixed-size=${ERIS_UBOOT_ENV_SIZE_KIB}K
-part /boot --label boot       --ondisk mmcblk0 --fixed-size 128M --align 4096 --offset=${ERIS_UBOOT_BOOT_OFFSET_KIB}K --source bootimg-partition --fstype=vfat --active
+# BOOT is mounted explicitly by early-init; omit its mountpoint to avoid a fstab entry.
+part       --label boot       --ondisk mmcblk0 --fixed-size 128M --align 4096 --offset=${ERIS_UBOOT_BOOT_OFFSET_KIB}K --source bootimg-partition --fstype=vfat --active
 part /     --label system-a   --ondisk mmcblk0 --size 512M      --align 4096 --source rootfs            --fstype=ext4

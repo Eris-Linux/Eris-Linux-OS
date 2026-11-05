@@ -70,7 +70,7 @@ class LayoutTest(unittest.TestCase):
                 self.assertEqual([p.start * 512 for p in parts[:3]],
                                  [1048576, 2097152, 4194304])
                 self.assertEqual([p.size_sec * 512 for p in parts[:2]], [size, size])
-                self.assertEqual([p.mountpoint for p in parts[2:]], ['/boot', '/'])
+                self.assertEqual([p.mountpoint for p in parts[2:]], [None, '/'])
 
     def test_reject_unsafe_layouts(self):
         for changes in ({'OFFSET': '0'}, {'OFFSET': '512'}, {'SIZE': '0'},
