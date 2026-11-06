@@ -1,3 +1,13 @@
 #!/bin/sh
 
 /usr/sbin/eris-containers  network  "$@"
+status=$?
+
+# This records completion of the startup attempts, not container health.
+# Failed applications must still be repairable by the updater.
+if [ "${1:-}" = "start" ]
+then
+	: > /run/eris-containers-started || exit 1
+fi
+
+exit "${status}"

@@ -17,10 +17,10 @@ INITSCRIPT_PACKAGES = "${PN}-early ${PN}-network"
 RDEPENDS:${PN} += "${PN}-early ${PN}-network"
 
 INITSCRIPT_NAME:${PN}-early = "${BPN}-early"
-INITSCRIPT_PARAMS:${PN}-early = "start 21 5 ."
+INITSCRIPT_PARAMS:${PN}-early = "start 23 5 ."
 
 INITSCRIPT_NAME:${PN}-network = "${BPN}-network"
-INITSCRIPT_PARAMS:${PN}-network = "start 91 5 ."
+INITSCRIPT_PARAMS:${PN}-network = "start 24 5 ."
 
 do_install() {
 

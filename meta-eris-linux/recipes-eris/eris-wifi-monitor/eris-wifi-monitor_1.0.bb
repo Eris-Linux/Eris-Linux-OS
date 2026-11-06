@@ -12,7 +12,7 @@ SRC_URI += "                                        \
 
 inherit update-rc.d
 INITSCRIPT_NAME = "run-eris-wifi-monitor"
-INITSCRIPT_PARAMS = "start 90 2 3 4 5 ."
+INITSCRIPT_PARAMS = "start 3 2 3 4 5 ."
 
 do_install:append() {
         install -d ${D}${sysconfdir}

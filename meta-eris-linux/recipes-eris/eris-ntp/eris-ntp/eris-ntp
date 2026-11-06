@@ -19,29 +19,58 @@ fi
 
 RETRY_AFTER_FAILURE_DELAY=30
 RETRY_AFTER_SUCCESS_DELAY=300
+INITIAL_RETRY_DELAY=5
+NTP_QUERY_TIMEOUT=20
+NTP_KILL_DELAY=2
+LOG_FILE=/run/eris-ntp.log
+PARAMETERS_FILE=/etc/eris-linux/parameters
+synchronized=no
+
+log_event()
+{
+	if [ -f "${LOG_FILE}" ] && [ "$(wc -c < "${LOG_FILE}")" -ge 262144 ]
+	then
+		mv -f "${LOG_FILE}" "${LOG_FILE}.1"
+	fi
+	read -r uptime ignored < /proc/uptime
+	printf '[uptime=%s] %s\n' "${uptime}" "$*" >> "${LOG_FILE}"
+}
+
+log_event "NTP service started"
 
 while true
 do
 	wait_delay=${RETRY_AFTER_FAILURE_DELAY}
 
-	if [ -e "/etc/eris-linux/parameters" ]
+	ntp_enable=no
+	ntp_server=""
+	if [ -r "${PARAMETERS_FILE}" ]
 	then
-		source "/etc/eris-linux/parameters"
+		. "${PARAMETERS_FILE}"
 	fi
 	if [ "${ntp_enable}" = "yes" ] && [ "${ntp_server}" != "" ]
 	then
-		if ping -c1 -w1 "${ntp_server}" >/dev/null 2>&1
+		if [ "${synchronized}" = "no" ]
 		then
-			# If we succeed in setting the date...
-			if ntpd -d -n -q -p "${ntp_server}" >/dev/null 2>&1
+			wait_delay=${INITIAL_RETRY_DELAY}
+		fi
+		# ICMP reachability does not establish NTP availability. Query NTP
+		# directly, without holding up the other startup services.
+		log_event "Querying ${ntp_server}"
+		if timeout --kill-after="${NTP_KILL_DELAY}" "${NTP_QUERY_TIMEOUT}" \
+			ntpd -n -q -p "${ntp_server}" >> "${LOG_FILE}" 2>&1
+		then
+			synchronized=yes
+			log_event "Clock synchronized: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+			# Store a successful synchronization in the hardware clock.
+			if [ -e "/dev/rtc" ]
 			then
-				# ... store it in the hardware clock.
-				if [ -e "/dev/misc/rtc" ]
-				then
-					hwclock -w >/dev/null 2>&1
-				fi
-				wait_delay=${RETRY_AFTER_SUCCESS_DELAY}
+				hwclock -w >/dev/null 2>&1
 			fi
+			wait_delay=${RETRY_AFTER_SUCCESS_DELAY}
+		else
+			status=$?
+			log_event "NTP query failed (status=${status}); retry in ${wait_delay}s"
 		fi
 	fi
 	sleep ${wait_delay}

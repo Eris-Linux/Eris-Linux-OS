@@ -39,7 +39,7 @@ S = "${WORKDIR}"
 
 inherit update-rc.d
 INITSCRIPT_NAME = "start-${BPN}"
-INITSCRIPT_PARAMS = "start 21 5 ."
+INITSCRIPT_PARAMS = "start 19 5 ."
 
 inherit systemd
 SYSTEMD_SERVICE:${PN} += "${BPN}.service"

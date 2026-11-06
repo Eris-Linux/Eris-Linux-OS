@@ -8,7 +8,10 @@ SRC_URI += "file://${BPN}.service"
 
 inherit update-rc.d
 INITSCRIPT_NAME = "start-${BPN}"
-INITSCRIPT_PARAMS = "start 10 5 ."
+INITSCRIPT_PARAMS = "start 4 5 ."
+
+# GNU timeout bounds a stalled query, including DNS and clock convergence.
+RDEPENDS:${PN} += "busybox coreutils"
 
 inherit systemd
 SYSTEMD_SERVICE:${PN} += "${BPN}.service"
