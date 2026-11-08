@@ -4,10 +4,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "                      \
     file://boot.cmd.in            \
     file://gpio-fragment.cfg      \
-    "
-
-#    file://eris-splashscreen.bmp  \
-#
+    file://eris-splashscreen.bmp  \
+	"
 
 DEPENDS += "u-boot-mkimage-native"
 
@@ -132,10 +130,10 @@ do_compile:prepend() {
 }
 
  
-#do_install:append() {
-#	install -d ${D}/boot
-#	install -m 0644 ${WORKDIR}/eris-splashscreen.bmp  ${D}/boot/
-#}
+do_install:append() {
+	install -d ${D}/boot
+	install -m 0644 ${WORKDIR}/eris-splashscreen.bmp  ${D}/boot/splashscreen.bmp
+}
 
 
 do_deploy:prepend() {
@@ -144,4 +142,4 @@ do_deploy:prepend() {
 }
 
 
-#FILES:${PN} += "/boot/eris-splashscreen.bmp"
+FILES:${PN} += "/boot/splashscreen.bmp"
