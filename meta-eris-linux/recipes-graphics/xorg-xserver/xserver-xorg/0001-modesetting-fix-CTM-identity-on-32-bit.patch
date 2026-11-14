@@ -1,0 +1,27 @@
+Subject: [PATCH] modesetting: use 64-bit constants for the identity CTM
+
+An unsigned long is only 32 bits on ARM32. Shifting 1UL by 32 bits does
+not produce the required S31.32 fixed-point representation of one. The
+resulting invalid identity matrix can turn all output colours black when
+the kernel exposes the CTM property.
+
+Use unsigned long long constants, as the identity comparison already does.
+
+Upstream-Status: Backport [https://gitlab.freedesktop.org/xorg/xserver/-/commit/69beb656539d5f9f82ec501f42245d0f43b709d8]
+
+diff --git a/hw/xfree86/drivers/modesetting/drmmode_display.c b/hw/xfree86/drivers/modesetting/drmmode_display.c
+--- a/hw/xfree86/drivers/modesetting/drmmode_display.c
++++ b/hw/xfree86/drivers/modesetting/drmmode_display.c
+@@ -63,9 +63,9 @@
+                                               void *pPixData);
+ 
+ static const struct drm_color_ctm ctm_identity = { {
+-    1UL << 32, 0, 0,
+-    0, 1UL << 32, 0,
+-    0, 0, 1UL << 32
++    1ULL << 32, 0, 0,
++    0, 1ULL << 32, 0,
++    0, 0, 1ULL << 32
+ } };
+ 
+ static Bool ctm_is_identity(const struct drm_color_ctm *ctm)
