@@ -1,0 +1,8 @@
+# Mesa 25.1.6 on the ARM32 Pi 2 hangs during Glamor's GL-to-GLES fallback.
+# Keep KMS modesetting and software X rendering until that path is fixed.
+Section "OutputClass"
+    Identifier "Eris Pi 2 VC4"
+    MatchDriver "vc4"
+    Driver "modesetting"
+    Option "AccelMethod" "none"
+EndSection
